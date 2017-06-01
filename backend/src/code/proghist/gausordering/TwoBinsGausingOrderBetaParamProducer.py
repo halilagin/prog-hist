@@ -149,7 +149,7 @@ class PHBin(object):
         
         
     
-class GausOrderinBetaParamProducer(object):
+class TwoBinsGausOrderingBetaParamProducer(object):
     
     def __init__(self, hist=[ [0.2, 0.45, 10], [0.4, 1.0, 20] ]):
         pass
@@ -207,7 +207,7 @@ class GausOrderinBetaParamProducer(object):
         random.shuffle(origData)
         #categorized data
         catData = []
-        
+    
         
         
 #         for bin in self.bins:
@@ -251,7 +251,86 @@ class GausOrderinBetaParamProducer(object):
                     freq.append(chunk.count(k))
             freqs.append(freq)
         return freqs
-     
+    
+    
+    def normalize(self, bins):
+        
+        s = sum(bins)
+        
+        a = map(lambda x: float(x)/s, bins)
+        return list(a)
+    
+    # replicate of test7. returns an array whose elements indicate the changes in bins and among 2 bins. 
+    # for each chunk having 6 categorical value, this operation is done.
+    # [[bin1_change, bin2_change, bin1-bin2-change]]
+    def determineChangeBtwTwoBins(self, bins):
+        #between two bins
+        CHANGE_LABELS_BTW_BINS=["BECOMING_FAR", "SUPPORTS_INCREASE", "MERGING"]
+        CHANGE_LABELS_OF_BIN=["SPLITTING", "SUPPORTS_CONCEPT", "SPLITTING"]
+        #hist=[[0,0.2,10],[0.15,0.35,20],[0.3,0.40,30] ]
+        #first element added artificially. it shows baseline entropy. entropy higher than this value means there is more uncertainty,
+        #lower than that mean there is a definite move among bins.
+        #bins = [[0, 1.0, 0, 0, 1.0, 0.0], [0, 2, 0, 1.0, 1.0, 0.0], [0, 1, 0, 0.0, 2.5, 0.0], [0, 1, 0, 0.5, 2.0, 0.0], [0, 3, 0, 0.0, 1.5, 0.0]]
+        #bins = [[0, 1.0, 0, 0, 1.0, 0.0], [0, 2, 2, 2.0, 1.0, 0.0], [2, 1, 0, 0.0, 2.5, 4.0], [0, 1, 0, 0.5, 2.0, 0.0], [2, 0, 2, 0.0, 1.5, 0.0]]
+        
+        #bins_probs = [[self.normalize(x)] for x in bins]
+        
+        bins_probs =[]
+        for bin in bins:
+            if sum(bin)==0:
+                continue
+            n = self.normalize(bin)
+            bins_probs.append([n])
+        
+        
+        #bins_entropy = [stats.entropy(x) for x in bins_probs]
+        #bins = self.normalize(bins[0])
+        #print ("entropy",bins_entropy)
+        #f = np.vectorize(self.logTransform, otypes=[np.float])
+        
+        changesInBins=[]
+        for bin in bins_probs:
+            binchanges=[]
+            X = np.array(bin)
+            Xt = np.transpose(X)
+            P = np.dot(Xt,X)
+            
+            #P = f(P)
+            b1b2_corr = P[0:3,3:6]
+            b1b2 = np.fliplr(b1b2_corr)
+            diagonals = b1b2.diagonal()
+            if (len(diagonals)==0):
+                continue
+            argmax_idx = np.argmax(diagonals)
+            #print (CHANGE_LABELS_BTW_BINS[argmax_idx]) #
+            binchanges.append(CHANGE_LABELS_BTW_BINS[argmax_idx])
+            #np.apply_along_axis(self.logTransform,1, P )
+            
+            b1_corr = P[0:3,0:3]
+            b1 = np.fliplr(b1_corr)
+            diagonals = b1.diagonal()
+            argmax_idx = np.argmax(diagonals)
+            #print (CHANGE_LABELS_OF_BIN[argmax_idx])
+            binchanges.append(CHANGE_LABELS_OF_BIN[argmax_idx])
+
+            
+            b2_corr = P[3:6,3:6]
+            b2 = np.fliplr(b2_corr)
+            diagonals = b2.diagonal()
+            argmax_idx = np.argmax(diagonals)
+            #print (CHANGE_LABELS_OF_BIN[argmax_idx])
+            binchanges.append(CHANGE_LABELS_OF_BIN[argmax_idx])
+            changesInBins.append(binchanges)
+        return changesInBins
+    
+    
+    def twoBinsProgHistData(self, dataCount=10, chunkSize=6):
+        data = self.betaBernoulli3BinsRead(datacount=dataCount, chunkSize=chunkSize)
+        changes = self.determineChangeBtwTwoBins(data[3]) #freqs
+        data.append(changes)
+        return data
+        
+        
     def betaBernoulli3BinsReadTest(self):
         #returns array of array
         #array[0] stores real value
@@ -424,11 +503,12 @@ class GausOrderinBetaParamProducer(object):
         #self.argmaxInBinsTest()
         #self.read(datacount=10)
         #self.betaBernoulli3BinsRvsTest()
-        self.betaBernoulli3BinsReadTest()
-
+        #self.betaBernoulli3BinsReadTest()
+        data = self.twoBinsProgHistData(dataCount=10, chunkSize=6)
+        print (data)
 
 # [[bin_lowerbound, bin_upperbound, bin_popul_size]] 
 #definition of histogram : [ [0.2, 0.45, 10], [0.4, 1.0, 20] ]
  
-#bpp = GausOrderinBetaParamProducer(hist=[ [0.2, 0.45, 10], [0.4, 1.0, 20] ])
+#bpp = TwoBinsGausOrderingBetaParamProducer(hist=[ [0.2, 0.45, 10], [0.4, 1.0, 20] ])
 #bpp.start()

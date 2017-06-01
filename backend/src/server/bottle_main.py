@@ -1,5 +1,5 @@
 from code.test.playground.chapter08_10 import Chapter08_10
-from code.proghist.gausordering import  GausingOrderBetaParamProducer
+from code.proghist.gausordering import TwoBinsGausingOrderBetaParamProducer
 
 import bottle
 from bottle import Bottle, request, response, route, run
@@ -7,6 +7,8 @@ import json
 
 from beaker.middleware import SessionMiddleware
 from code.proghist.gausordering.BinChangesByEntropy import BinChangesByEntropy
+from code.proghist.gausordering.ManyBinsGausingOrderBetaParamProducer import ManyBinsGausOrderingBetaParamProducer,\
+    MyJsonEncoder
 
 #https://github.com/tomastrajan/react-typescript-webpack/blob/master/src/auth/auth.service.ts
 
@@ -60,20 +62,58 @@ def test():
 
 
 
+# @bottle.route('/proghist/streaming/createdata', method=['OPTIONS', 'GET'])
+# def proghist_streaming_createdata():
+#     if request.method == 'OPTIONS':
+#         return {}
+#     
+#     s = bottle.request.environ.get('beaker.session')
+#     bce = BinChangesByEntropy()
+#     hist = [ [0.2, 0.45, 10], [0.4, 1.0, 20] ]
+#     bpp = TwoBinsGausingOrderBetaParamProducer.GausOrderinBetaParamProducer (hist = hist)
+#     
+#     data = bpp.betaBernoulli3BinsRead(datacount=10, chunkSize=6)
+#     data.append(bce.determineChangeOfBins(hist, data[3]))
+#     s["hist"] = data
+#     s.save()
+#     return json.dumps(s.get("hist", None))
+
+
+
+# this is for two bins
+
+# @bottle.route('/proghist/streaming/createdata', method=['OPTIONS', 'GET'])
+# def proghist_streaming_createdata():
+#     if request.method == 'OPTIONS':
+#         return {}
+#     
+#     s = bottle.request.environ.get('beaker.session')
+#     hist = [ [0.2, 0.45, 10], [0.4, 1.0, 20] ]
+#     bpp = TwoBinsGausingOrderBetaParamProducer.TwoBinsGausOrderingBetaParamProducer (hist = hist)
+#     data = bpp.twoBinsProgHistData(dataCount=10, chunkSize=6)
+#     s["hist"] = data
+#     s.save()
+#     return json.dumps(s.get("hist", None))
+
+
+# this is for many bins
 @bottle.route('/proghist/streaming/createdata', method=['OPTIONS', 'GET'])
 def proghist_streaming_createdata():
     if request.method == 'OPTIONS':
         return {}
     
     s = bottle.request.environ.get('beaker.session')
-    bce = BinChangesByEntropy()
-    bpp = GausingOrderBetaParamProducer.GausOrderinBetaParamProducer (hist = [ [0.2, 0.45, 10], [0.4, 1.0, 20] ])
-    
-    data = bpp.betaBernoulli3BinsRead(datacount=10, chunkSize=6)
-    data.append(bce.determineChangeOfBins(data[3]))
+    hist=[ [0, 0.2, 10], [0.15, 0.35, 20], [0.25, 0.50, 30], [0.50, 0.60, 40], [0.55, 0.65, 50] ]
+    bpp = ManyBinsGausOrderingBetaParamProducer (hist = hist)
+    data =bpp.binchanges
+    print("bottle.main\n")
+    for c in bpp.binchanges:
+        print("\n",c)
+    #print (bpp.binchanges)
     s["hist"] = data
     s.save()
-    return json.dumps(s.get("hist", None))
+    return json.dumps(s.get("hist", None), cls=MyJsonEncoder)
+
 
 @bottle.route('/proghist/streaming/data/<index:int>', method=['OPTIONS', 'GET'])
 def proghist_streaming_data(index):

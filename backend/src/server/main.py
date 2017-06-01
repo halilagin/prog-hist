@@ -5,7 +5,7 @@ from flask import make_response, request, current_app
 from functools import update_wrapper
 
 from code.test.playground.chapter08_10 import Chapter08_10
-from code.proghist.gausordering import  GausingOrderBetaParamProducer
+from code.proghist.gausordering import TwoBinsGausingOrderBetaParamProducer
 
 app = Flask(__name__)
 # set the secret key.  keep this really secret:
@@ -82,7 +82,7 @@ def test_json_get():
 
 @app.route('/proghist/streaming/createdata', methods=["GET"])
 def proghist_streaming_createdata():
-    bpp = GausingOrderBetaParamProducer.GausOrderinBetaParamProducer (hist = [ [0.2, 0.45, 10], [0.4, 1.0, 20] ])
+    bpp = TwoBinsGausingOrderBetaParamProducer.GausOrderinBetaParamProducer (hist = [ [0.2, 0.45, 10], [0.4, 1.0, 20] ])
     session["hist"] = bpp.betaBernoulli3BinsRead(datacount=10, chunkSize=6)
     session.modified = True
     print (session["hist"])

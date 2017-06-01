@@ -199,14 +199,15 @@ class BinChangesByEntropy(object):
             
 
 
+
     # replicate of test7. returns an array whose elements indicate the changes in bins and among 2 bins. 
     # for each chunk having 6 categorical value, this operation is done.
     # [[bin1_change, bin2_change, bin1-bin2-change]]
-    def determineChangeOfBins(self, bins):
+    def determineChangeBtwTwoBins(self, bins):
         #between two bins
         CHANGE_LABELS_BTW_BINS=["BECOMING_FAR", "SUPPORTS_INCREASE", "MERGING"]
         CHANGE_LABELS_OF_BIN=["SPLITTING", "SUPPORTS_CONCEPT", "SPLITTING"]
-        
+        #hist=[[0,0.2,10],[0.15,0.35,20],[0.3,0.40,30] ]
         #first element added artificially. it shows baseline entropy. entropy higher than this value means there is more uncertainty,
         #lower than that mean there is a definite move among bins.
         #bins = [[0, 1.0, 0, 0, 1.0, 0.0], [0, 2, 0, 1.0, 1.0, 0.0], [0, 1, 0, 0.0, 2.5, 0.0], [0, 1, 0, 0.5, 2.0, 0.0], [0, 3, 0, 0.0, 1.5, 0.0]]
@@ -215,7 +216,7 @@ class BinChangesByEntropy(object):
         #bins_entropy = [stats.entropy(x) for x in bins_probs]
         #bins = self.normalize(bins[0])
         #print ("entropy",bins_entropy)
-        f = np.vectorize(self.logTransform, otypes=[np.float])
+        #f = np.vectorize(self.logTransform, otypes=[np.float])
         
         changesInBins=[]
         for bin in bins_probs:
@@ -229,7 +230,7 @@ class BinChangesByEntropy(object):
             b1b2 = np.fliplr(b1b2_corr)
             diagonals = b1b2.diagonal()
             argmax_idx = np.argmax(diagonals)
-            print (CHANGE_LABELS_BTW_BINS[argmax_idx]) #
+            #print (CHANGE_LABELS_BTW_BINS[argmax_idx]) #
             binchanges.append(CHANGE_LABELS_BTW_BINS[argmax_idx])
             #np.apply_along_axis(self.logTransform,1, P )
             
@@ -237,7 +238,7 @@ class BinChangesByEntropy(object):
             b1 = np.fliplr(b1_corr)
             diagonals = b1.diagonal()
             argmax_idx = np.argmax(diagonals)
-            print (CHANGE_LABELS_OF_BIN[argmax_idx])
+            #print (CHANGE_LABELS_OF_BIN[argmax_idx])
             binchanges.append(CHANGE_LABELS_OF_BIN[argmax_idx])
 
             
@@ -245,10 +246,18 @@ class BinChangesByEntropy(object):
             b2 = np.fliplr(b2_corr)
             diagonals = b2.diagonal()
             argmax_idx = np.argmax(diagonals)
-            print (CHANGE_LABELS_OF_BIN[argmax_idx])
+            #print (CHANGE_LABELS_OF_BIN[argmax_idx])
             binchanges.append(CHANGE_LABELS_OF_BIN[argmax_idx])
             changesInBins.append(binchanges)
         return changesInBins
+
+    # replicate of test7. returns an array whose elements indicate the changes in bins and among 2 bins. 
+    # for each chunk having 6 categorical value, this operation is done.
+    # [[bin1_change, bin2_change, bin1-bin2-change]]
+    def determineChangeOfBins(self,bins):
+        c = self.determineChangeBtwTwoBins(bins)
+        print (c)
+        return c
 
             
     

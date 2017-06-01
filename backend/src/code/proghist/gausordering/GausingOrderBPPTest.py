@@ -16,12 +16,13 @@ import random
 from scipy.special.basic import bernoulli
 import math
 from pylab import mlab
-from code.proghist.gausordering.GausingOrderBetaParamProducer import GausOrderinBetaParamProducer
+from code.proghist.gausordering.TwoBinsGausingOrderBetaParamProducer import TwoBinsGausOrderingBetaParamProducer
 
 
 
 # [[bin_lowerbound, bin_upperbound, bin_popul_size]] 
 #definition of histogram : [ [0.2, 0.45, 10], [0.4, 1.0, 20] ]
- 
-bpp = GausOrderinBetaParamProducer(hist=[ [0.2, 0.45, 10], [0.4, 1.0, 20] ])
+
+hist=[ [0.2, 0.45, 10], [0.4, 0.65, 20] ]
+bpp = TwoBinsGausOrderingBetaParamProducer(hist = hist)
 bpp.start()

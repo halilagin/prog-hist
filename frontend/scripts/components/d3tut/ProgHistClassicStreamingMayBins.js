@@ -246,7 +246,7 @@ export class ProgHistClassicStreaming extends Component {
       newAges.push(newStreamedData[i]);
     }
     this.setState({ages: newAges});
-    console.log(this.state.ages);
+
     let bins = hist.bins(this.state.binsCount)(this.state.ages);
     var sx = d3.scale.linear()
       .domain([0, d3.max(this.state.ages)])
@@ -262,16 +262,14 @@ export class ProgHistClassicStreaming extends Component {
       "x2": bins[0].x,
       "y2": bins[0].y
     }];
-    // for (var i = 0; i < bins.length - 1; i++) {
-    //   histVerLines.push({
-    //     "x1": bins[i].x + bins[i].dx,
-    //     "y1": bins[i].y,
-    //     "x2": bins[i + 1].x,
-    //     "y2": bins[i + 1].y
-    //   });
-    // }
-
-    console.log(bins);
+    for (var i = 0; i < bins.length - 1; i++) {
+      histVerLines.push({
+        "x1": bins[i].x + bins[i].dx,
+        "y1": bins[i].y,
+        "x2": bins[i + 1].x,
+        "y2": bins[i + 1].y
+      });
+    }
 
     var bars = this.state.canvas.selectAll(".histhorline")
         .data(bins)
@@ -282,138 +280,103 @@ export class ProgHistClassicStreaming extends Component {
     bars.append("line")
       .classed("histhorline", true)
       .attr("x1", d => sx(d.x))
-      .attr("y1", d => this.state.height - sy(d.y)+5)
-      .attr("x2", d => {
-        return sx(d.x +d.dx-d.dx/20.0)
-      })
-      .attr("y2", d => this.state.height - sy(d.y)+5)
+      .attr("y1", d => this.state.height - sy(d.y))
+      .attr("x2", d => sx(d.x + d.dx))
+      .attr("y2", d => this.state.height - sy(d.y))
       .attr("fill", "none")
       .attr("stroke", "#33aade")
-      .attr("stroke-width", "2");
-
-
+      .attr("stroke-width", "3");
 
 
     let gXaxis = d3.svg.axis().scale(sx).orient("bottom");
-    this.state.canvas.append("g").style({ 'stroke': 'Black', 'fill': 'none', 'stroke-width': '1px'})
+    this.state.canvas.append("g")
       .call(gXaxis)
-      .attr("transform", "translate(-5," + (this.state.height + 5) + ")");
+      .attr("transform", "translate(5," + (this.state.height + 5) + ")");
 
-    // bars.append("text")
-    //   .attr("x", d => sx(d.x))
-    //   .attr("y", d => this.state.height - sy(d.y))
-    //   .attr("dx", d => sx(d.dx) / 2)
-    //   .attr("text-anchor", "middle")
-    //   .attr("dy", 20)
-    //   .attr("fill", "#000000")
-    //   .text(d => d.y);
+    bars.append("text")
+      .attr("x", d => sx(d.x))
+      .attr("y", d => this.state.height - sy(d.y))
+      .attr("dx", d => sx(d.dx) / 2)
+      .attr("text-anchor", "middle")
+      .attr("dy", 20)
+      .attr("fill", "#000000")
+      .text(d => d.y);
 
     console.log(changesInNewStreamedData);
 
       //between bins : ["BECOMING_FAR", "SUPPORTS_INCREASE", "MERGING"]. zeroth index stores the change between bins
 
-        var histverlineG1 = this.state.canvas.selectAll(".histverline")
-            .data(bins)
+        var histverlineG = this.state.canvas.selectAll(".histverline")
+            .data(histVerLines)
             .enter()
             .append("line")
             .attr("class", (d, i) => {
-              //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
+              if (i==0)
                 return "histverline";
-              })
-            .attr("x1", (d, i) => sx(d.x))
-            .attr("y1", (d, i) => this.state.height+5)
-            .attr("x2", (d, i) => sx(d.x))
-            .attr("y2", (d, i) => this.state.height - sy(d.y)+5)
+
+              if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
+                return "histverline-dash";
+              else if (changesInNewStreamedData[(i-1)*3]=="MERGING")
+                return "histverline";
+              else
+                return "histverline";
+
+
+              //return (i*3) == (b1b2_idx+1) ? "histverline-dash" : "histverline";
+            })
+            .attr("x1", (d, i) => sx(d.x1))
+            .attr("y1", (d, i) => this.state.height - sy(d.y1))
+            .attr("x2", (d, i) => sx(d.x2))
+            .attr("y2", (d, i) => this.state.height - sy(d.y2))
             .attr("fill", "none")
             .attr("stroke", (d, i) => {
-             //   if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
+              if (i==0)
                 return "#33aade";
+
+              if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
+                return "purple";
+              else if (changesInNewStreamedData[(i-1)*3]=="MERGING")
+                return "black";
+              else
+                return "#33aade";
+
+
+              //return i == (b1b2_idx+1) ? "purple" : "#33aade";
             })
             .attr("stroke-width", (d, i) => {
-              //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
+              if (i==0)
+                return "3";
 
-              return "2";
+              if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
+                return "1";
+              else if (changesInNewStreamedData[(i-1)*3]=="MERGING")
+                return "7";
+              else
+                return "3";
               //return i == (b1b2_idx+1) ? "purple" : "#33aade";
             })
           ;
 
-    var histverlineG2 = this.state.canvas.selectAll(".histverline2")
-        .data(bins)
-        .enter()
-        .append("line")
-        .attr("class", (d, i) => {
-          //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-          return "histverline2";
-        })
-        .attr("x1", (d, i) => sx(d.x+d.dx-d.dx/20.0))
-        .attr("y1", (d, i) => this.state.height+5)
-        .attr("x2", (d, i) => sx(d.x+d.dx-d.dx/20.0))
-        .attr("y2", (d, i) => this.state.height - sy(d.y)+5)
-        .attr("fill", "none")
-        .attr("stroke", (d, i) => {
-          //   if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-          return "#33aade";
-        })
-        .attr("stroke-width", (d, i) => {
-          //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
+    for (let b1b2_idx=0,k=0 ;b1b2_idx<(changesInNewStreamedData.length/3);b1b2_idx++, k=b1b2_idx+3) {
 
-          return "2";
-          //return i == (b1b2_idx+1) ? "purple" : "#33aade";
-        })
-      ;
-
-
-    for (let b1b2_idx=0,k=0 ;b1b2_idx<(changesInNewStreamedData.length/3);b1b2_idx++, k=b1b2_idx*3) {
-
-      // if ((k) >= changesInNewStreamedData.length)
-      //   break;
-
-      let arr = [bins[b1b2_idx]];
-      if ((b1b2_idx+1)<bins.length)
-        arr.push(bins[b1b2_idx+1]);
-      this.drawMergeLines(arr, sx, sy);
-
-      if ( changesInNewStreamedData[k] == "MERGING" ) {
-        let idx = b1b2_idx;
-        // let sinus = [sx(bins[sinIdx].x + bins[sinIdx].dx / 4), this.state.height - sy(bins[sinIdx].y), sx(bins[sinIdx].dx / 2), 3];
-        // this.drawSinus(this.state.canvas, sinus[0], sinus[1], sinus[2], sinus[3], "red");
-
-        // let arr = [bins[idx]];
-        // if ((idx+1)<bins.length)
-        //   arr.push(idx+1);
-      }
-
+      if ((k) >= changesInNewStreamedData.length)
+        break;
       //inside the first bin: CHANGE_LABELS_OF_BIN=["SPLITTING", "SUPPORTS_CONCEPT", "SPLITTING"]
       if (changesInNewStreamedData[k + 1] == "SPLITTING") {
-        console.log ("splitting first bin,",k+1);
-
         console.log("draw splitting on bin1");
         let sinIdx = b1b2_idx;
-        // let sinus = [sx(bins[sinIdx].x + bins[sinIdx].dx / 4), this.state.height - sy(bins[sinIdx].y), sx(bins[sinIdx].dx / 2), 3];
-        // this.drawSinus(this.state.canvas, sinus[0], sinus[1], sinus[2], sinus[3], "red");
-
-        let arr = [bins[sinIdx]];
-        this.drawCrack(arr, sx, sy);
-
-
-
-
+        let sinus = [sx(bins[sinIdx].x + bins[sinIdx].dx / 4), this.state.height - sy(bins[sinIdx].y), sx(bins[sinIdx].dx / 2), 3];
+        this.drawSinus(this.state.canvas, sinus[0], sinus[1], sinus[2], sinus[3], "red");
       } else { //SUPPORTS_CONCEPT
 
       }
 
       //inside the second bin: CHANGE_LABELS_OF_BIN=["SPLITTING", "SUPPORTS_CONCEPT", "SPLITTING"]
       if (changesInNewStreamedData[k + 2] == "SPLITTING") {
-        console.log ("splitting second bin,",k+2);
-
         console.log("draw splitting on bin2");
-         let sinIdx = b1b2_idx + 1;
-        // let sinus = [sx(bins[sinIdx].x + bins[sinIdx].dx / 4), this.state.height - sy(bins[sinIdx].y), sx(bins[sinIdx].dx / 2), 3];
-        // this.drawSinus(this.state.canvas, sinus[0], sinus[1], sinus[2], sinus[3], "red");
-
-        let arr = [bins[sinIdx]];
-        this.drawCrack(arr, sx, sy);
-
+        let sinIdx = b1b2_idx + 1;
+        let sinus = [sx(bins[sinIdx].x + bins[sinIdx].dx / 4), this.state.height - sy(bins[sinIdx].y), sx(bins[sinIdx].dx / 2), 3];
+        this.drawSinus(this.state.canvas, sinus[0], sinus[1], sinus[2], sinus[3], "red");
       } else { //SUPPORTS_CONCEPT
 
       }
@@ -439,7 +402,7 @@ export class ProgHistClassicStreaming extends Component {
     // let sinus = [sx(bins[sinIdx].x+bins[sinIdx].dx/4), this.state.height-sy(bins[sinIdx].y), sx(bins[sinIdx].dx/2), 3];
     //
     // this.drawSinus(this.state.canvas, sinus[0], sinus[1], sinus[2],sinus[3], "red");
-    //this.drawBoxplots(bars,sx, sy,this.state.height, "red");
+    this.drawBoxplots(bars,sx, sy,this.state.height, "red");
 
   }
 
@@ -522,149 +485,6 @@ export class ProgHistClassicStreaming extends Component {
             .attr("fill", color);
     }
 
-
-    drawMergeLines (arr,sx,sy) {
-
-      let minY = arr[0].y;
-
-      if (arr.length==2 && arr[1].y<minY )
-          minY = arr[1].y;
-      console.log("minY,", minY);
-
-
-      let left = [arr[0]];
-      this.state.canvas.selectAll(".histverline_merge_left")
-        .data(left)
-          .enter()
-          .append("line")
-          .attr("class", (d, i) => {
-            //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-            return "histverline_merge_left";
-          })
-        .attr("x1", (d, i) => sx(d.x+d.dx-d.dx/20.0))
-        .attr("y1", (d, i) => this.state.height+5)
-        .attr("x2", (d, i) => sx(d.x+d.dx-d.dx/20.0))
-        .attr("y2", (d, i) => this.state.height - sy(minY/2)+5)
-          .attr("fill", "none")
-          .attr("stroke", (d, i) => {
-            //   if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-            return "#ffffff";
-          })
-          .attr("stroke-width", (d, i) => {
-            //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-
-            return "2";
-            //return i == (b1b2_idx+1) ? "purple" : "#33aade";
-          })
-        ;
-
-
-
-      if (arr.length==2){
-        let right = [arr[1]];
-        this.state.canvas.selectAll(".histverline_merge_right")
-          .data(right)
-          .enter()
-          .append("line")
-          .attr("class", (d, i) => {
-            //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-            return "histverline_merge_right";
-          })
-          .attr("x1", (d, i) =>  sx(d.x))
-          .attr("y1", (d, i) => this.state.height+5)
-          .attr("x2", (d, i) => sx(d.x))
-          .attr("y2", (d, i) => this.state.height - sy(minY/2.0)+5)
-          .attr("fill", "none")
-          .attr("stroke", (d, i) => {
-            //   if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-            return "#ffffff";
-          })
-          .attr("stroke-width", (d, i) => {
-            //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-
-            return "2";
-            //return i == (b1b2_idx+1) ? "purple" : "#33aade";
-          })
-        ;
-
-
-
-        this.state.canvas.selectAll(".histverline_merge_topline")
-          .data(right)
-          .enter()
-          .append("line")
-          .attr("class", (d, i) => {
-            //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-            return "histverline_merge_topline";
-          })
-          .attr("x1", (d, i) => sx(d.x))
-          .attr("y1", (d, i) => this.state.height - sy(minY/2.0)+5)
-          .attr("x2", (d, i) => sx(d.x-d.dx/20))
-          .attr("y2", (d, i) => this.state.height - sy(minY/2.0)+5)
-          .attr("fill", "none")
-          .attr("stroke", (d, i) => {
-            //   if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-            return "#33aade";
-          })
-          .attr("stroke-width", (d, i) => {
-            //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-
-            return "2";
-            //return i == (b1b2_idx+1) ? "purple" : "#33aade";
-          })
-        ;
-
-      }
-
-    }
-
-    drawCrack(arr,sx,sy) {
-      this.state.canvas.selectAll(".histhorline_crack_top_hl")
-        .data(arr)
-        .enter()
-        .append("line")
-        .attr("class", (d,i)=>{return "histhorline_crack_top_hl"})
-        .attr("x1", d => sx(d.x+d.dx/2-d.dx/20.0))
-        .attr("y1", d => this.state.height - sy(d.y)+5)
-        .attr("x2", d => {
-          return sx(d.x+d.dx/2+d.dx/20.0)
-        })
-        .attr("y2", d => this.state.height - sy(d.y)+5)
-        .attr("fill", "none")
-        .attr("stroke", "#ffffff")
-        .attr("stroke-width", "2");
-
-      this.state.canvas.selectAll(".histhorline_crack_left_line")
-        .data(arr)
-        .enter()
-        .append("line")
-        .attr("class", (d,i)=>{return "histhorline_crack_left_line"})
-        .attr("x1", d => sx(d.x+d.dx/2-d.dx/20.0))
-        .attr("y1", d => this.state.height - sy(d.y)+5)
-        .attr("x2", d => {
-          return sx(d.x+d.dx/2)
-        })
-        .attr("y2", d => this.state.height - sy(d.y)+5+10)
-        .attr("fill", "none")
-        .attr("stroke", "#33aade")
-        .attr("stroke-width", "2");
-
-      this.state.canvas.selectAll(".histhorline_crack_right_line")
-        .data(arr)
-        .enter()
-        .append("line")
-        .attr("class", (d,i)=>{return "histhorline_crack_left_line"})
-        .attr("x1", d => sx(d.x+d.dx/2))
-        .attr("y1", d => this.state.height - sy(d.y)+5+10)
-        .attr("x2", d => {
-          return sx(d.x+d.dx/2+d.dx/20.0)
-        })
-        .attr("y2", d => this.state.height - sy(d.y)+5)
-        .attr("fill", "none")
-        .attr("stroke", "#33aade")
-        .attr("stroke-width", "2");
-    }
-
     drawSinus(canvas, x,y,r,w, color){
         this.drawPie(canvas, x,y, r/2,w, "up",color);
         this.drawPie(canvas, x+r,y, r/2,w, "down", color);
@@ -677,7 +497,7 @@ export class ProgHistClassicStreaming extends Component {
         this.refs={txtBinsCount:null, txtInterval:null};
         this.state = null;
         this.state = {
-            interval: 10000,
+            interval: 3000,
             binsCount:5,
             ages:[],
             width:400,

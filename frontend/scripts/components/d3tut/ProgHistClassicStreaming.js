@@ -1,6 +1,5 @@
 import React, {Component} from 'react';
 import * as d3 from 'd3';
-
 import * as axios from 'axios';
 
 
@@ -31,7 +30,7 @@ export class ProgHistClassicStreaming extends Component {
 
   streamingDataIdx=-1;
   twobinsArray=[];
-
+  userData = {clicks:[],binCountGuess:0,cost:0, startTime:-1};
 
   // changes array has 3 elements. first indicates changes between 2 bins,
   // second indicates change in first bin and the last shows changes in second bin.
@@ -67,15 +66,36 @@ export class ProgHistClassicStreaming extends Component {
         return (
           <div>
             <div>
-                <label>Bins Count <input ref="txtBinsCount" defaultValue={this.state.binsCount} /></label>
-                <label>Interval <input ref="txtInterval" defaultValue={this.state.interval} />ms </label>
-                <label> <button key="start"   onClick={this.startTimer.bind(this)} >Start</button></label>
+                <div>
+                  <div> Guess for number of gaussians</div>
+                  <div><input ref="txtBinCountGuess" defaultValue={this.userData.binCountGuess} />
+                    <button key="setGuessOfGaussCount"  onClick={this.setGuessOfGaussCount.bind(this)} >OK</button>
+                  </div>
+                </div>
+                <div className="ph_bincountdiv">
+                  <div>Bins Count</div>
+                  <div className="ph_bincount_txt_cntr">
+                    <input ref="txtBinsCount" defaultValue={this.state.binsCount} className="ph_bincount" />
+                  </div>
+                  <div className="ph_bincount_updown_cntr">
+                    <div><span className="glyphicon glyphicon-chevron-up"  onClick={this.increaseBinCount.bind(this)}></span></div>
+                    <div><span className="glyphicon glyphicon-chevron-down" onClick={this.decreaseBinCount.bind(this)}></span></div>
+                  </div>
+                </div>
+                <div className="ph_clear"> </div>
 
-                <label>Action <button key="start"   onClick={this.stopTimer.bind(this)} >Stop</button></label>
-              <label>Action <button key="generateData"   onClick={this.generateData.bind(this)} >generateData</button></label>
-                <label><button key="refresh"  onClick={this.refresh.bind(this)} >Refresh</button></label>
+                <div className="interval_cntr">Interval <input ref="txtInterval" defaultValue={this.state.interval} />ms <button key="start"   onClick={this.startTimer.bind(this)} >Start</button></div>
+                <div className="ph_buttons">
+                  <div className="ph_buttonitem"> <button key="start"   onClick={this.stopTimer.bind(this)} >Stop</button></div>
+                  <div className="ph_buttonitem"> <button key="generateData"   onClick={this.generateData.bind(this)} >generateData</button></div>
+                  <div className="ph_buttonitem"><button key="refresh"  onClick={this.refresh.bind(this)} >Refresh</button></div>
+                </div>
             </div>
             <div className="svgcontainer">
+
+            </div>
+
+            <div id="userevaluation">
 
             </div>
           </div>
@@ -92,6 +112,52 @@ export class ProgHistClassicStreaming extends Component {
         this.initData();
         this.start();
     }
+
+
+  setGuessOfGaussCount(){
+    this.userData.binCountGuess = this.refs.txtBinCountGuess.value;
+    console.log(this.userData);
+    let url = "http://localhost:5000/proghist/streaming/saveuserdata";
+
+    axios.post(url, this.userData)
+      .then((resp) => {
+        alert("user data submitted. thanks!");
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
+  }
+  increaseBinCount(){
+    if (this.userData.clicks.length==0){
+      this.userData.startTime = new Date().getTime();
+    }
+
+    this.stopTimer();
+    this.state.binsCount +=1;
+
+    this.userData.clicks.push({time:new Date().getTime() - this.userData.startTime, upDown:'up', binCount:this.state.binsCount});
+    this.refs.txtBinsCount.value = this.state.binsCount;
+    this.setState(this.state);
+    this.generateData();
+    this.start();
+
+  }
+
+  decreaseBinCount(){
+    if (this.userData.clicks.length==0){
+      this.userData.startTime = new Date().getTime();
+    }
+
+    this.stopTimer();
+    this.state.binsCount -=1;
+    this.userData.clicks.push({time:new Date().getTime() - this.userData.startTime, upDown:'down',binCount:this.state.binsCount});
+    this.refs.txtBinsCount.value = this.state.binsCount;
+    this.setState(this.state);
+    this.generateData();
+    this.start();
+  }
+
+
     setInterval(){
         let newInterval = this.refs.txtInterval.value;
         this.state.interval =newInterval;
@@ -112,15 +178,17 @@ export class ProgHistClassicStreaming extends Component {
     }
 
   generateData(){
+    let url = "http://localhost:5000/proghist/streaming/createdata?bincount="+this.refs.txtBinsCount.value;
     //axios.get("http://localhost:5000/proghist/streaming/data/0")
-    axios.get("http://localhost:5000/proghist/streaming/createdata")
+    console.log("url", url);
+    axios.get(url)
       .then((resp) => {
         this.setStream(resp.data);
         console.log(this.twobinsArray);
         //+1 [ab,bc,cd,de] -> [a,b,c,d,e], 4lu ikili iliski 5li bin in iliskisidir. 5 i bulmak icin +1 eklendi
         //this.setState({binsCount:this.twobinsArray.length+1 });
-        this.state.binsCount = this.twobinsArray.length+1;
-        this.setState(this.state);
+        //this.state.binsCount = this.twobinsArray.length+1;
+        //this.setState(this.state);
         console.log("data stream created, this.state.binsCount ", this.state.binsCount );
       });
 
@@ -774,7 +842,7 @@ export class ProgHistClassicStreaming extends Component {
 
 
     initData(){
-        this.refs={txtBinsCount:null, txtInterval:null};
+        this.refs={txtBinsCount:null, txtInterval:null, txtBinCountGuess:null};
         this.state = null;
         this.state = {
             interval: 3000,
@@ -790,6 +858,8 @@ export class ProgHistClassicStreaming extends Component {
         //this.state.ages = [1, 5, 10, 12, 35, 75, 68, 2, 7, 10, 55, 40, 42, 86, 39, 16, 47, 61, 9, 14, 1, 5, 10, 10, 12, 35, 75, 64, 22, 28, 2, 7, 21, 59, 43, 42, 83, 39, 18, 47, 59, 8, 15];
         this.state.ages=[0,0,0,.99,.99,.99];
         this.setState(this.state);
+
+
     }
     componentWillMount() {
       //this.phStream= new PHStream();

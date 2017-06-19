@@ -450,7 +450,6 @@ export class ProgHistPiD extends Component {
         let layer2Bins = this.doLayer2(this.state.pid.counts,
              this.state.pid.breaks,
              this.state.pid.groupCountInLayer2);
-
     }
 
     doLayer2(counts, breaks, groupCountInLayer2){
@@ -481,9 +480,7 @@ export class ProgHistPiD extends Component {
                 bin.x = bin.min;
                 bin.length = bin.length + counts[idx];
                 bin.y = bin.length;
-
             }
-
             bin.dx = bin.max-bin.min;
             layer2Bin.push(bin);
             totalCount = totalCount+1;

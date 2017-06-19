@@ -9,7 +9,49 @@
         href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"
         integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ=="
         crossorigin="anonymous">
+  <link rel="stylesheet" href="http://localhost:5002/public/bootstrap337/css/bootstrap.css">
+  <link rel="stylesheet" type="text/css" href="./node_modules/nvd3/build/nv.d3.min.css">
+
+
   <style>
+
+    .ph_clear{
+      clear: both;
+    }
+    .ph_bincount{
+      width:30px;
+      height: 40px;
+    }
+    .ph_buttons{
+      margin: 5px 0px 5px 0px;
+      position: relative;
+    }
+
+    .ph_buttonitem{
+      position: relative;
+      float: left;
+      margin: 0px 10px 0px 0px;
+
+    }
+
+    .ph_bincountdiv {
+      position: relative;
+    }
+
+    .ph_bincount_txt_cntr {
+      position: relative;
+      float: left;
+    }
+    .ph_bincount_updown_cntr{
+      position: relative;
+      float: left;
+    }
+
+    .interval_cntr{
+      margin-bottom: 10px;
+      margin-top: 10px;
+    }
+
 
     .ProgHistClassic{}
     .ProgHistPiD{}
@@ -34,12 +76,19 @@
     }
 
   </style>
+  <style type="text/css">
+    #lineChart svg {
+      height: 400px;
+      width:500px;
+    }
+  </style>
 </head>
 
 <body>
 <div></div>
 <div class="container">
   <div class="h1bgraph"></div>
+  <div id="lineChart"></div>
 </div>
 
 <div>
@@ -47,6 +96,16 @@
   <div style="position:relative;float:left;margin-left:150px;" class="ProgHistClassic"></div>
   <div style="position:relative;float:right; margin-right:150px;"class="ProgHistPiD"></div>
 </div>
+
+
+
+
+
+
 <script src="/dist/bundle.js"></script>
+<script src="/public/jquery321.js"></script>
+<script src="/public/bootstrap337/js/bootstrap.js"></script>
+<!--<script src="/public/c3.min.js"></script>-->
+
 </body>
 </html>

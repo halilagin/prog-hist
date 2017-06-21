@@ -5,6 +5,7 @@ import {ProgHist} from "../d3tut/ProgHist"
 import {ProgHistControlPanel} from "../d3tut/ProgHistControlPanel"
 import {ProgHistPiD} from "../d3tut/ProgHistPiD"
 import {ProgHistClassicStreaming} from "../d3tut/ProgHistClassicStreaming"
+import {ProgHistAnnotatedBins} from "../d3tut/ProgHistAnnotatedBins"
 import {LineWrapper} from "../nvd3react/LineWrapper"
 import {UserResponseTimes} from "../userevaluation/UserResponseTimes"
 
@@ -17,7 +18,8 @@ class App extends Component {
                 {/*<div style={{position:'relative', float:"left",  width:"400px"}}><h2>Progressive Histogram</h2><ProgHist style={{position:'relative'}} name="dummyname" mountClass="ProgHistClassic"></ProgHist></div>*/}
                 <div style={{position:'relative', float:"left",  width:"400px"}}>
                   <h2>Progressive Histogram Streaming</h2>
-                  <ProgHistClassicStreaming style={{position:'relative'}} name="dummyname" mountClass="ProgHistClassicStreaming"></ProgHistClassicStreaming>
+                  {/*<ProgHistClassicStreaming style={{position:'relative'}} name="dummyname" mountClass="ProgHistClassicStreaming"></ProgHistClassicStreaming>*/}
+                  <ProgHistAnnotatedBins style={{position:'relative'}} name="dummyname" mountClass="ProgHistClassicStreaming"></ProgHistAnnotatedBins>
                   {/*<LineWrapper name="wrapper"/>*/}
                 </div>
 

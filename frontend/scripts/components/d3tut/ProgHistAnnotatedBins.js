@@ -3,29 +3,20 @@ import * as d3 from 'd3';
 import * as axios from 'axios';
 
 
-class TwoBinsProgHistData extends Component {
-  binSizes=null;
-  origData=null;
-  catData=null;
-  freqs=null;
-
-  //changes array has 3 elements. first indicates changes between 2 bins,
-  // second indicates change in forst bin and the last shows changes in second bin.
-  // example
-  // "BECOMING_FAR" : two bins become for away from eachother
-  // 1: "SPLITTING" : first bins splits
-  // 2: "SUPPORTS_CONCEPT" : second bin support the concept. namely, preserve the ration between its accompanying bin.
-
-  changes=null;
+class StreamedDataContext extends Component {
+  bins=null;
+  binchanges=null;
+  histogramData =null;
+  streamedData=null
 }
 
 
-export class ProgHistClassicStreaming extends Component {
+export class ProgHistAnnotatedBins extends Component {
   CHANGE_LABELS_BTW_BINS=["BECOMING_FAR", "SUPPORTS_INCREASE", "MERGING"]
   CHANGE_LABELS_OF_BIN=["SPLITTING", "SUPPORTS_CONCEPT", "SPLITTING"]
 
   streamingDataIdx=-1;
-  twobinsArray=[];
+  streamedDataContext=null;
   userData = {clicks:[], binCountGuess:0, cost:0, startTime:-1};
 
   // changes array has 3 elements. first indicates changes between 2 bins,
@@ -36,25 +27,13 @@ export class ProgHistClassicStreaming extends Component {
   // 2: "SUPPORTS_CONCEPT" : second bin support the concept. namely, preserve the ration between its accompanying bin.
 
   setStream(data){
-    // this.raw = data;
-    // this.binSizes = data[0];
-    // this.origData = data[1];
-    // this.catData = data[2];
-    // this.freqs = data[3];
-    // this.changes = data[4];
-    this.twobinsArray=[];
-    for (let i=0;i<(data.length);i++){
-      let tb = new TwoBinsProgHistData()
-      tb.binSizes = data[i][0];
-
-      tb.origData = data[i][1];
-      tb.catData = data[i][2];
-      tb.freqs = data[i][3];
-      tb.changes = data[i][4];
-      this.twobinsArray.push(tb)
-    }
-
-    console.log(this.twobinsArray);
+    if (this.streamedDataContext==null)
+      this.streamedDataContext = new StreamedDataContext()
+    this.streamedDataContext.bins = data.bins
+    this.streamedDataContext.binchanges = data.binchanges
+    this.streamedDataContext.histogramData=data.histogramData
+    this.streamedDataContext.streamedData=data.streamedData
+    console.log("streamed data context", this.streamedDataContext);
 
   }
 
@@ -177,17 +156,9 @@ export class ProgHistClassicStreaming extends Component {
 
   generateData(){
     let url = "http://localhost:5000/proghist/streaming/createdata?bincount="+this.refs.txtBinsCount.value;
-    //axios.get("http://localhost:5000/proghist/streaming/data/0")
-
     axios.get(url)
       .then((resp) => {
         this.setStream(resp.data);
-        console.log(this.twobinsArray);
-        //+1 [ab,bc,cd,de] -> [a,b,c,d,e], 4lu ikili iliski 5li bin in iliskisidir. 5 i bulmak icin +1 eklendi
-        //this.setState({binsCount:this.twobinsArray.length+1 });
-        //this.state.binsCount = this.twobinsArray.length+1;
-        //this.setState(this.state);
-
         console.log("data stream created, this.state.binsCount ", this.state.binsCount );
       });
 
@@ -202,61 +173,6 @@ export class ProgHistClassicStreaming extends Component {
 
     componentWillReceiveProps(props) {
 
-    }
-
-
-    sortArr(arr_){
-        for (var i=0;i<arr_.length;i++){
-            for(var j=0;j<arr_.length-1;j++){
-                if (arr_[j]>arr_[j+1]) {
-                    let temp = arr_[j];
-                    arr_[j]=arr_[j+1];
-                    arr_[j+1]=temp;
-                }
-            }
-        }
-    }
-
-    getBins(binNumber, arr_){
-        let bins = [];
-
-        this.sortArr(arr_);
-
-        let minValue = arr_[0];
-        let maxValue = arr_[arr_.length-1];
-        let barRange = (maxValue-minValue)/binNumber;
-        for (var i=0;i<binNumber;i++){
-            let range  = [i*barRange, (i+1)*barRange];
-            let barValues = [];
-            for (var j=0;j<arr_.length;j++){
-                if (arr_[j]>=range[0] && arr_[j]<=range[1])
-                    barValues.push(arr_[j]);
-            }
-            bins.push(barValues);
-        }
-
-        return bins;
-        //console.log(bins);
-
-    }
-
-     myrand(min, max) {
-        min = Math.ceil(min);
-        max = Math.floor(max);
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
-
-
-    randFn25(){
-        return d3.random.normal(25,5);
-    }
-
-    randFn50(){
-        return d3.random.normal(50,5);
-    }
-
-    randFn75(){
-        return d3.random.normal(75,5);
     }
 
     start(){
@@ -284,22 +200,19 @@ export class ProgHistClassicStreaming extends Component {
   loopDrawingProgHist(){
     this.streamingDataIdx++;
     let hist = d3.layout.histogram();
-    let newStreamedData = [];
-    let changesInNewStreamedData = [];
-    let newOrigStreamedData = [];
 
-    for (let i=0;i<this.twobinsArray.length;i++){
-      let phStream = this.twobinsArray[i];
-      //console.log(newStreamedData);
-      newOrigStreamedData = newOrigStreamedData.concat(phStream.origData[this.streamingDataIdx]);
-      changesInNewStreamedData = changesInNewStreamedData.concat(phStream.changes[this.streamingDataIdx]);
-    }
+    let url = "http://localhost:5000/proghist/streaming/createdata?bincount="+this.refs.txtBinsCount.value+"&idx="+this.streamingDataIdx;
+    axios.get(url)
+      .then((resp) => {
+        this.setStream(resp.data);
+        console.log("data stream created, this.state.binsCount ", this.state.binsCount );
+        this.drawBins(hist);
+      });
 
-    this.drawTwoBins(hist, newOrigStreamedData, changesInNewStreamedData);
+
   }
 
-  drawTwoBins(hist, newStreamedData,changesInNewStreamedData ) {
-
+  drawBins(hist ) {
     this.state.canvas.selectAll("*").remove();
     this.state.canvas.append("text")
       .attr("x", d => this.state.width / 2 - 20)
@@ -308,49 +221,38 @@ export class ProgHistClassicStreaming extends Component {
       .attr("fill", "#000000")
       .text("prog-hist-annotated");
 
+    console.log("bin.changes", this.streamedDataContext.binchanges);
 
-    let bins = hist.bins(this.state.binsCount)(newStreamedData);
     var sx = d3.scale.linear()
-      .domain([0, d3.max(newStreamedData)])
+      .domain([0, d3.max(this.streamedDataContext.histogramData)])
       .range([0, this.state.width * 0.9]);
     var sy = d3.scale.linear()
-      .domain([0, d3.max(bins.map(d => d.y))])
+      .domain([0, d3.max(this.streamedDataContext.bins.map(d => d.size))])
       .range([0, this.state.height * 0.75]);
     //this.getBins(5,this.this.ages);
 
-    let histVerLines = [{
-      "x1": 1,
-      "y1": 0,
-      "x2": bins[0].x,
-      "y2": bins[0].y
-    }];
+
 
     let gXaxis = d3.svg.axis().scale(sx).orient("bottom");
     this.state.canvas.append("g").style({ 'stroke': 'Black', 'fill': 'none', 'stroke-width': '1px'})
       .call(gXaxis)
       .attr("transform", "translate(-5," + (this.state.height + 5) + ")");
-    console.log(changesInNewStreamedData);
       //between bins : ["BECOMING_FAR", "SUPPORTS_INCREASE", "MERGING"]. zeroth index stores the change between bins
 
 
 
-    for (let idx=0,k=0 ;idx<bins.length;idx++, k=idx*3) {
+    for (let idx=0;idx<this.streamedDataContext.bins.length;idx++) {
+      let changesInNewStreamedData = this.streamedDataContext.binchanges;
+      let bins = this.streamedDataContext.bins
 
-      if ( changesInNewStreamedData[k] == "MERGING" ) {
-        console.log("bins,mering",[bins[idx]]);
-
+      if ( changesInNewStreamedData[idx][0] == "MERGING" ) {
         this.drawVerLeftLine(bins, idx, sx, sy);
         this.drawVerRightLine(bins, idx, sx, sy);
-
         let arr = [bins[idx]];
         if ((idx+1)<bins.length)
           arr.push(bins[idx+1]);
         this.drawMergeLines(arr, sx, sy);
-
-
-
-      } else if (changesInNewStreamedData[k] == "BECOMING_FAR") {
-
+      } else if (changesInNewStreamedData[idx][0] == "BECOMING_FAR") {
         let curve_idx=idx;
         //this.drawVerLeftLine(bins, idx, sx, sy);
         if (idx==0)
@@ -362,13 +264,9 @@ export class ProgHistClassicStreaming extends Component {
         this.drawRightBezierLine(curve_idx, sx,sy, bins);
         this.drawLeftBezierLine(curve_idx+1, sx,sy, bins);
       } else {//supports concept "SUPPORT_CONTEXPT"
-
-
-
-        console.log("bins,supportconcepts",[bins[idx]]);
         if (idx==0)
           this.drawVerLeftLine(bins, idx, sx, sy);
-        else if ( (idx-1) > -1 && changesInNewStreamedData[ (idx-1)*3 ] == "BECOMING_FAR")
+        else if ( (idx-1) > -1 && changesInNewStreamedData[ (idx-1) ][0] == "BECOMING_FAR")
           ;
         else
           this.drawVerLeftLine(bins, idx, sx, sy);
@@ -378,24 +276,19 @@ export class ProgHistClassicStreaming extends Component {
       //draw horizontal left half and right half line
       if (idx==0)
         this.drawBarHorLeftLine(bins, idx, sx, sy);
-
-      if (changesInNewStreamedData[ (idx)*3 ] == "BECOMING_FAR") {
-        if ( (idx-1) > -1 && changesInNewStreamedData[ (idx-1)*3 ] == "BECOMING_FAR")
+      if (changesInNewStreamedData[idx][0] == "BECOMING_FAR") {
+        if ( (idx-1) > -1 && changesInNewStreamedData[ (idx-1) ][0] == "BECOMING_FAR")
             ;
         else
           this.drawBarHorLeftLine(bins, idx, sx, sy);
-       console.log(idx,"horz.line.1");//current right nand next left will be drawn.
-      } else if ( (idx-1) > -1 && changesInNewStreamedData[ (idx-1)*3 ] == "BECOMING_FAR") {
-        console.log(idx, "horz.line.2");
+      } else if ( (idx-1) > -1 && changesInNewStreamedData[ (idx-1) ][0] == "BECOMING_FAR") {
         this.drawBarHorRightLine(bins, idx, sx, sy);
-      }else {
-        console.log(idx,"horz.line.4");
+      } else {
         this.drawBarHorizontalLine(bins, idx, sx, sy);
       }
+
       //inside the first bin: CHANGE_LABELS_OF_BIN=["SPLITTING", "SUPPORTS_CONCEPT", "SPLITTING"]
-      if (changesInNewStreamedData[k + 1] == "SPLITTING") {
-        console.log ("splitting first bin,",k+1);
-        console.log("draw splitting on bin1");
+      if (changesInNewStreamedData[idx][1] == "SPLITTING") {
         let sinIdx = idx;
         let arr = [bins[sinIdx]];
         this.drawCrack(arr, sx, sy);
@@ -404,9 +297,7 @@ export class ProgHistClassicStreaming extends Component {
       }
 
       //inside the second bin: CHANGE_LABELS_OF_BIN=["SPLITTING", "SUPPORTS_CONCEPT", "SPLITTING"]
-      if (changesInNewStreamedData[k + 2] == "SPLITTING") {
-        console.log ("splitting second bin,",k+2);
-        console.log("draw splitting on bin2");
+      if (changesInNewStreamedData[idx][2] == "SPLITTING") {
         let sinIdx = idx + 1;
         let arr = [bins[sinIdx]];
         this.drawCrack(arr, sx, sy);
@@ -561,9 +452,6 @@ export class ProgHistClassicStreaming extends Component {
   }
 
     drawBoxplots(bars, sx,sy,height, color){
-
-
-
          bars.append("line")
             .attr("class","boxplot")
             .attr("x1", (d,i)=>sx(d.x+d.dx/2))

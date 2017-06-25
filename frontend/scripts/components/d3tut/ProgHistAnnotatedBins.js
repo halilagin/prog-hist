@@ -15,7 +15,6 @@ export class ProgHistAnnotatedBins extends Component {
   CHANGE_LABELS_BTW_BINS=["BECOMING_FAR", "SUPPORTS_INCREASE", "MERGING"]
   CHANGE_LABELS_OF_BIN=["SPLITTING", "SUPPORTS_CONCEPT", "SPLITTING"]
 
-  streamingDataIdx=-1;
 
   streamedDataContext=null;
   userData = {clicks:[], binCountGuess:0, cost:0, startTime:-1};
@@ -65,7 +64,7 @@ export class ProgHistAnnotatedBins extends Component {
                 <div className="interval_cntr">Interval <input ref="txtInterval" defaultValue={this.state.interval} />ms <button key="start"   onClick={this.startTimer.bind(this)} >Start</button></div>
                 <div className="ph_buttons">
                   <div className="ph_buttonitem"> <button key="start"   onClick={this.stopTimer.bind(this)} >Stop</button></div>
-                  <div className="ph_buttonitem"> <button key="generateData"   onClick={this.generateData.bind(this)} >generateData</button></div>
+                  {/*<div className="ph_buttonitem"> <button key="generateData"   onClick={this.generateData.bind(this)} >generateData</button></div>*/}
                   <div className="ph_buttonitem"><button key="refresh"  onClick={this.refresh.bind(this)} >Refresh</button></div>
                 </div>
             </div>
@@ -112,11 +111,9 @@ export class ProgHistAnnotatedBins extends Component {
 
     this.stopTimer();
     this.state.binsCount +=1;
-
     this.userData.clicks.push({time:new Date().getTime() - this.userData.startTime, upDown:'up', binCount:this.state.binsCount});
     this.refs.txtBinsCount.value = this.state.binsCount;
     this.setState(this.state);
-    this.generateData();
     this.start();
 
   }
@@ -131,7 +128,6 @@ export class ProgHistAnnotatedBins extends Component {
     this.userData.clicks.push({time:new Date().getTime() - this.userData.startTime, upDown:'down',binCount:this.state.binsCount});
     this.refs.txtBinsCount.value = this.state.binsCount;
     this.setState(this.state);
-    this.generateData();
     this.start();
   }
 
@@ -155,15 +151,6 @@ export class ProgHistAnnotatedBins extends Component {
         this.start();
     }
 
-  generateData(){
-    let url = "http://localhost:5000/proghist/streaming/createdata?bincount="+this.refs.txtBinsCount.value;
-    axios.get(url)
-      .then((resp) => {
-        this.setStream(resp.data);
-        console.log("data stream created, this.state.binsCount ", this.state.binsCount );
-      });
-
-  }
 
     stopTimer(){
         if (this.state.timer!=null)
@@ -177,7 +164,6 @@ export class ProgHistAnnotatedBins extends Component {
     }
 
     start(){
-        this.streamingDataIdx = 42;
         let timeInterval=1000;
         if (this.state!=null && this.state.interval!=null)
             timeInterval = this.state.interval;
@@ -199,16 +185,19 @@ export class ProgHistAnnotatedBins extends Component {
 
 
   loopDrawingProgHist(){
-    this.streamingDataIdx++;
-    console.log("this.streamingDataIdx", this.streamingDataIdx);
+
+    console.log("streamingDataIdx", this.state.streamingDataIdx);
     let hist = d3.layout.histogram();
 
-    let url = "http://localhost:5000/proghist/streaming/createdata?bincount="+this.refs.txtBinsCount.value+"&idx="+this.streamingDataIdx;
+    let url = "http://localhost:5000/proghist/streaming/createdata?bincount="+this.refs.txtBinsCount.value+"&idx="+this.state.streamingDataIdx;
     axios.get(url)
       .then((resp) => {
         this.setStream(resp.data);
         console.log("data stream created, this.state.binsCount ", this.state.binsCount );
         this.drawBins(hist);
+        this.state.streamingDataIdx = this.state.streamingDataIdx +1;
+        this.setState(this.state);
+
       });
 
 
@@ -256,66 +245,60 @@ export class ProgHistAnnotatedBins extends Component {
     for (let idx=0;idx<bins.length;idx++) {
 
       //draw left line
-      if (idx==0) {
+      if (idx == 0) {
         this.drawVerLeftLine(bins, idx, sx, sy);
-        this.drawBarHorLeftLine(bins, idx, sx, sy);
-      } else if (idx==changesInNewStreamedData.length) {
-        if ( changesInNewStreamedData[idx-1][0]=="BECOMING_FAR"){
-          this.drawRightBezierLine(bins, idx, sx,sy);
-          //this.drawBarHorLeftLine(bins, idx, sx, sy);
-        } else if ( changesInNewStreamedData[idx-1][0]=="MERGING"){
-          this.drawMergeLeftLine(bins, idx, sx,sy);
-          this.drawBarHorLeftLine(bins, idx, sx, sy);
+        this.drawBarHorLeftLine(bins, idx, sx, sy,changesInNewStreamedData);
+      } else if (idx == changesInNewStreamedData.length) {
+        if (changesInNewStreamedData[idx - 1][0] == "BECOMING_FAR") {
+          this.drawRightBezierLine(bins, idx, sx, sy, changesInNewStreamedData, idx-1);
+          //this.drawRightBezierLine(bins, idx, sx, sy,changesInNewStreamedData);
+        } else if (changesInNewStreamedData[idx - 1][0] == "MERGING") {
+          this.drawMergeLeftLine(bins, idx, sx, sy);
+          this.drawBarHorLeftLine(bins, idx, sx, sy,changesInNewStreamedData);
         } else {
           this.drawVerLeftLine(bins, idx, sx, sy);
-          this.drawBarHorLeftLine(bins, idx, sx, sy);
+          this.drawBarHorLeftLine(bins, idx, sx, sy,changesInNewStreamedData);
         }
 
       } else {
-        if ( changesInNewStreamedData[idx-1][0]=="BECOMING_FAR"){
-          this.drawRightBezierLine(bins, idx, sx,sy);
-          // if ( changesInNewStreamedData[idx][0]!="BECOMING_FAR")
-          //   this.drawBarHorRightLine(bins, idx, sx, sy);
-        } else if (changesInNewStreamedData[idx-1][0]=="MERGING"){
-          this.drawMergeLeftLine(bins, idx, sx,sy);
-          // if ( changesInNewStreamedData[idx][0]!="BECOMING_FAR")
-          //   this.drawBarHorRightLine(bins, idx, sx, sy);
-          this.drawBarHorLeftLine(bins, idx, sx, sy);
+        if (changesInNewStreamedData[idx - 1][0] == "BECOMING_FAR") {
+          this.drawRightBezierLine(bins, idx, sx, sy,changesInNewStreamedData, idx-1);
+          //this.drawRightBezierLine(bins, idx, sx, sy,changesInNewStreamedData);
+
+        } else if (changesInNewStreamedData[idx - 1][0] == "MERGING") {
+          this.drawMergeLeftLine(bins, idx, sx, sy);
+          this.drawBarHorLeftLine(bins, idx, sx, sy,changesInNewStreamedData);
         } else {
           this.drawVerLeftLine(bins, idx, sx, sy);
-          // if ( changesInNewStreamedData[idx][0]!="BECOMING_FAR")
-          //   this.drawBarHorRightLine(bins, idx, sx, sy);
-          this.drawBarHorLeftLine(bins, idx, sx, sy);
+          this.drawBarHorLeftLine(bins, idx, sx, sy,changesInNewStreamedData);
         }
       }
 
       //draw right line
-      if (idx==changesInNewStreamedData.length) {
+      if (idx == changesInNewStreamedData.length) {
         this.drawVerRightLine(bins, idx, sx, sy);
-        this.drawBarHorRightLine(bins, idx, sx, sy);
-      } else if (idx==0) {
-        if ( changesInNewStreamedData[idx][0]=="BECOMING_FAR"){
-          this.drawLeftBezierLine(bins, idx, sx,sy);
-        } else if ( changesInNewStreamedData[idx][0]=="MERGING"){
-          this.drawMergeRightLine(bins, idx, sx,sy);
-          this.drawBarHorRightLine(bins, idx, sx, sy);
+        this.drawBarHorRightLine(bins, idx, sx, sy, changesInNewStreamedData);
+      } else if (idx == 0) {
+        if (changesInNewStreamedData[idx][0] == "BECOMING_FAR") {
+          this.drawLeftBezierLine(bins, idx, sx, sy, changesInNewStreamedData );
+        } else if (changesInNewStreamedData[idx][0] == "MERGING") {
+          this.drawMergeRightLine(bins, idx, sx, sy);
+          this.drawBarHorRightLine(bins, idx, sx, sy, changesInNewStreamedData);
         } else {
           this.drawVerRightLine(bins, idx, sx, sy);
-          this.drawBarHorRightLine(bins, idx, sx, sy);
+          this.drawBarHorRightLine(bins, idx, sx, sy, changesInNewStreamedData);
         }
 
 
       } else {
-        if ( changesInNewStreamedData[idx][0]=="BECOMING_FAR"){
-          this.drawLeftBezierLine(bins, idx, sx,sy);
-          // if ( changesInNewStreamedData[idx-1][0]!="BECOMING_FAR")
-          //   this.drawBarHorLeftLine(bins, idx, sx, sy);
-        } else if (changesInNewStreamedData[idx][0]=="MERGING"){
-          this.drawMergeRightLine(bins, idx, sx,sy);
-          this.drawBarHorRightLine(bins, idx, sx, sy);
+        if (changesInNewStreamedData[idx][0] == "BECOMING_FAR") {
+          this.drawLeftBezierLine(bins, idx, sx, sy, changesInNewStreamedData);
+        } else if (changesInNewStreamedData[idx][0] == "MERGING") {
+          this.drawMergeRightLine(bins, idx, sx, sy);
+          this.drawBarHorRightLine(bins, idx, sx, sy, changesInNewStreamedData);
         } else {
           this.drawVerRightLine(bins, idx, sx, sy);
-          this.drawBarHorRightLine(bins, idx, sx, sy);
+          this.drawBarHorRightLine(bins, idx, sx, sy, changesInNewStreamedData);
         }
       }
 
@@ -323,207 +306,21 @@ export class ProgHistAnnotatedBins extends Component {
       //this.drawBarHorRightLine(bins, idx, sx, sy);
 
 
-
-      if (idx<changesInNewStreamedData.length && changesInNewStreamedData[idx][1] == "SPLITTING") {
-          this.drawCrack(bins, idx, sx, sy);
+      if (idx < changesInNewStreamedData.length && changesInNewStreamedData[idx][1] == "SPLITTING") {
+        this.drawCrack(bins, idx, sx, sy);
       } else { //SUPPORTS_CONCEPT
 
       }
 
-      if (idx<changesInNewStreamedData.length && changesInNewStreamedData[idx][2] == "SPLITTING") {
-        this.drawCrack(bins, idx+1, sx, sy);
+      if (idx < changesInNewStreamedData.length && changesInNewStreamedData[idx][2] == "SPLITTING") {
+        this.drawCrack(bins, idx + 1, sx, sy);
       } else { //SUPPORTS_CONCEPT
 
       }
 
-
-      // //inside the second bin: CHANGE_LABELS_OF_BIN=["SPLITTING", "SUPPORTS_CONCEPT", "SPLITTING"]
-      // if (changesInNewStreamedData[idx][2] == "SPLITTING") {
-      //   let arr = [bins[idx+1]];
-      //   this.drawCrack(arr, sx, sy);
-      //
-      // } else { //SUPPORTS_CONCEPT
-      //
-      // }
-
-
-
-    // for (let idx=0;idx<bins.length;idx++) {
-    //
-    //
-    //
-    //   if (idx<(changesInNewStreamedData.length) && changesInNewStreamedData[idx][0] == "SUPPORTS_INCREASE") {
-    //     if (idx==0) {
-    //       this.drawVerLeftLine(bins, idx, sx, sy);
-    //       this.drawVerRightLine(bins, idx, sx, sy);
-    //       this.drawBarHorLeftLine(bins, idx, sx, sy);
-    //       this.drawBarHorRightLine(bins, idx, sx, sy);
-    //     } else {
-    //       if ((idx-1)>-1 && changesInNewStreamedData[idx-1][0]=="BECOMING_FAR"){
-    //         this.drawRightBezierLine(bins, idx-1, sx,sy);
-    //         this.drawVerRightLine(bins, idx-1, sx, sy);
-    //         this.drawBarHorLeftLine(bins, idx-1, sx, sy);
-    //         this.drawBarHorRightLine(bins, idx-1, sx, sy);
-    //       } else {
-    //         this.drawVerLeftLine(bins, idx, sx, sy);
-    //         this.drawVerRightLine(bins, idx, sx, sy);
-    //         this.drawBarHorLeftLine(bins, idx, sx, sy);
-    //         this.drawBarHorRightLine(bins, idx, sx, sy);
-    //       }
-    //     }
-    //   } else if (idx<(changesInNewStreamedData.length) && changesInNewStreamedData[idx][0] == "BECOMING_FAR") {
-    //     if (idx==0) {
-    //       this.drawVerLeftLine(bins, idx, sx, sy);
-    //       this.drawLeftBezierLine(bins, idx, sx,sy);
-    //       this.drawBarHorLeftLine(bins, idx, sx, sy);
-    //       this.drawBarHorRightLine(bins, idx, sx, sy);
-    //     } else {
-    //       if ((idx-1)>-1 && changesInNewStreamedData[idx-1][0]=="BECOMING_FAR"){
-    //         this.drawRightBezierLine(bins, idx, sx,sy);
-    //         this.drawLeftBezierLine(bins, idx, sx, sy);
-    //         this.drawBarHorLeftLine(bins, idx, sx, sy);
-    //         this.drawBarHorRightLine(bins, idx, sx, sy);
-    //       } if ((idx-1)>-1 && changesInNewStreamedData[idx-1][0]=="MERGING"){
-    //         //alert(1);
-    //         //this.drawVerLeftLine(bins, idx, sx,sy);
-    //         this.drawLeftBezierLine(bins, idx, sx, sy);
-    //         this.drawBarHorLeftLine(bins, idx, sx, sy);
-    //         this.drawBarHorRightLine(bins, idx, sx, sy);
-    //         let arr = [bins[idx-1]];
-    //         if (idx<bins.length)
-    //           arr.push(bins[idx]);
-    //         this.drawMergeLines(arr, sx, sy);
-    //       } else {
-    //         this.drawVerLeftLine(bins, idx, sx, sy);
-    //         this.drawLeftBezierLine(bins, idx, sx, sy);
-    //         this.drawBarHorLeftLine(bins, idx, sx, sy);
-    //         this.drawBarHorRightLine(bins, idx, sx, sy);
-    //       }
-    //     }
-    //   } else if (idx<(changesInNewStreamedData.length) && changesInNewStreamedData[idx][0] == "MERGING") {
-    //     if (idx==0) {
-    //       this.drawVerLeftLine(bins, idx, sx, sy);
-    //       this.drawLeftBezierLine(bins, idx, sx, sy);
-    //       this.drawBarHorLeftLine(bins, idx, sx, sy);
-    //       this.drawBarHorRightLine(bins, idx, sx, sy);
-    //     } else {
-    //       if ((idx-1)>-1 && changesInNewStreamedData[idx-1][0]=="BECOMING_FAR"){
-    //         this.drawRightBezierLine(bins, idx, sx,sy);
-    //         this.drawVerRightLine(bins, idx, sx, sy);
-    //         this.drawBarHorLeftLine(bins, idx, sx, sy);
-    //         this.drawBarHorRightLine(bins, idx, sx, sy);
-    //       } else {
-    //         this.drawVerLeftLine(bins, idx, sx, sy);
-    //         this.drawVerRightLine(bins, idx, sx, sy);
-    //         this.drawBarHorLeftLine(bins, idx, sx, sy);
-    //         this.drawBarHorRightLine(bins, idx, sx, sy);
-    //       }
-    //     }
-    //     let arr = [bins[idx]];
-    //     if ((idx+1)<bins.length)
-    //       arr.push(bins[idx+1]);
-    //     this.drawMergeLines(arr, sx, sy);
-    //   }
-    //   else if (idx==changesInNewStreamedData.length && changesInNewStreamedData[idx-1][0] == "BECOMING_FAR"){
-    //     if ((idx-1)>-1 && changesInNewStreamedData[idx-1][0]=="BECOMING_FAR"){
-    //       this.drawRightBezierLine(bins, idx, sx,sy);
-    //       this.drawVerRightLine(bins, idx, sx, sy);
-    //       this.drawBarHorLeftLine(bins, idx, sx, sy);
-    //       this.drawBarHorRightLine(bins, idx, sx, sy);
-    //     } else {
-    //       this.drawVerLeftLine(bins, idx, sx, sy);
-    //       this.drawLeftBezierLine(bins, idx, sx, sy);
-    //       this.drawBarHorLeftLine(bins, idx, sx, sy);
-    //       this.drawBarHorRightLine(bins, idx, sx, sy);
-    //     }
-    //
-    //   }
-
-
-
-      //   if (changesInNewStreamedData[idx][0] == "BECOMING_FAR") {
-      //   if (idx==0) {
-      //     this.drawVerLeftLine(bins, idx, sx, sy);
-      //     this.drawVerRightLine(bins, idx, sx, sy);
-      //     this.drawBarHorLeftLine(bins, idx, sx, sy);
-      //     this.drawBarHorRightLine(bins, idx, sx, sy);
-      //   } else {
-      //     this.drawLeftBezierLine(idx, sx,sy, bins);
-      //     this.drawRightBezierLine(idx+1, sx,sy, bins);
-      //     this.drawBarHorLeftLine(bins, 0, sx, sy);
-      //     this.drawBarHorRightLine(bins, idx, sx, sy);
-      //   }
-      // } else {
-      //   this.drawVerLeftLine(bins, idx, sx, sy);
-      //   this.drawVerRightLine(bins, idx, sx, sy);
-      //   this.drawBarHorLeftLine(bins, idx, sx, sy);
-      //   this.drawBarHorRightLine(bins, idx, sx, sy);
-      //
-      // }
-
-
-      // if ( changesInNewStreamedData[idx][0] == "MERGING" ) {
-      //   //this.drawVerLeftLine(bins, idx, sx, sy);
-      //   this.drawVerRightLine(bins, idx, sx, sy);
-      //   let arr = [bins[idx]];
-      //   if ((idx+1)<bins.length)
-      //     arr.push(bins[idx+1]);
-      //   this.drawMergeLines(arr, sx, sy);
-      // } else if (changesInNewStreamedData[idx][0] == "BECOMING_FAR") {
-      //   let curve_idx=idx;
-      //   //this.drawVerLeftLine(bins, idx, sx, sy);
-      //   if (idx==0)
-      //     this.drawVerLeftLine(bins, idx, sx, sy);
-      //   else if ( (idx-1) > -1 && changesInNewStreamedData[ (idx-1)*3 ] == "BECOMING_FAR")
-      //     ;
-      //   // else
-      //   //   this.drawVerLeftLine(bins, idx, sx, sy);
-      //   this.drawRightBezierLine(curve_idx, sx,sy, bins);
-      //   this.drawLeftBezierLine(curve_idx+1, sx,sy, bins);
-      // } else {//supports concept "SUPPORT_CONTEXPT"
-      //   if (idx==0)
-      //     this.drawVerLeftLine(bins, idx, sx, sy);
-      //   else if ( (idx-1) > -1 && changesInNewStreamedData[ (idx-1) ][0] == "BECOMING_FAR")
-      //     ;
-      //   else
-      //     this.drawVerLeftLine(bins, idx, sx, sy);
-      //   this.drawVerRightLine(bins, idx, sx, sy);
-      // }
-      //
-      // //draw horizontal left half and right half line
-      // if (idx==0)
-      //   this.drawBarHorLeftLine(bins, idx, sx, sy);
-      // if (changesInNewStreamedData[idx][0] == "BECOMING_FAR") {
-      //   if ( (idx-1) > -1 && changesInNewStreamedData[ (idx-1) ][0] == "BECOMING_FAR")
-      //       ;
-      //   else
-      //     this.drawBarHorLeftLine(bins, idx, sx, sy);
-      // } else if ( (idx-1) > -1 && changesInNewStreamedData[ (idx-1) ][0] == "BECOMING_FAR") {
-      //   this.drawBarHorRightLine(bins, idx, sx, sy);
-      // } else {
-      //   this.drawBarHorizontalLine(bins, idx, sx, sy);
-      // }
-      //
-      // //inside the first bin: CHANGE_LABELS_OF_BIN=["SPLITTING", "SUPPORTS_CONCEPT", "SPLITTING"]
-      // if (changesInNewStreamedData[idx][1] == "SPLITTING") {
-      //   let sinIdx = idx;
-      //   let arr = [bins[sinIdx]];
-      //   this.drawCrack(arr, sx, sy);
-      // } else { //SUPPORTS_CONCEPT
-      //
-      // }
-      //
-      // //inside the second bin: CHANGE_LABELS_OF_BIN=["SPLITTING", "SUPPORTS_CONCEPT", "SPLITTING"]
-      // if (changesInNewStreamedData[idx][2] == "SPLITTING") {
-      //   let sinIdx = idx + 1;
-      //   let arr = [bins[sinIdx]];
-      //   this.drawCrack(arr, sx, sy);
-      //
-      // } else { //SUPPORTS_CONCEPT
-      //
-      // }
-
+      //this.drawBoxplots(bins, idx, sx, sy, this.state.height, "red");
     }
+
 
   }
 
@@ -547,7 +344,7 @@ export class ProgHistAnnotatedBins extends Component {
       .attr("stroke-width", "2");
   }
 
-  drawBarHorLeftLine(bins, idx, sx,sy) {
+  drawBarHorLeftLine(bins, idx, sx,sy,changesInNewStreamedData) {
     this.state.canvas.selectAll(".histhorlineleft"+idx)
       .data([bins[idx]])
       .enter()
@@ -556,7 +353,29 @@ export class ProgHistAnnotatedBins extends Component {
       .attr("x1", d => sx(d.x))
       .attr("y1", d => this.state.height - sy(d.y) + 5)
       .attr("x2", d => {
-        return sx( d.x + d.dx/2.0 - d.dx/20)
+
+        // if (idx==0){
+        //   if ( changesInNewStreamedData[idx][1]=="SPLITTING" ) {
+        //     return sx(d.x + d.dx / 2.0 - d.dx / 20)
+        //   }else
+        //     return sx(d.x + d.dx/2.0);
+        // } else if (idx==changesInNewStreamedData.length){
+        //   if (changesInNewStreamedData[idx - 1][2] == "SPLITTING")
+        //     return sx(d.x + d.dx/2.0 - d.dx/20)
+        //   else
+        //     return sx(d.x + d.dx/2.0);
+        //
+        // } else {
+        //   if (changesInNewStreamedData[idx][1] == "SPLITTING")
+        //     return sx(d.x + d.dx/2.0 - d.dx/20)
+        //   else
+        //     return sx(d.x + d.dx/2.0);
+        // }
+
+        let or_1 = (idx>-1 && idx<changesInNewStreamedData.length) && changesInNewStreamedData[idx][1]=="SPLITTING";
+        let or_2 = ((idx-1)>-1 && (idx-1)<changesInNewStreamedData.length) && changesInNewStreamedData[idx-1][2]=="SPLITTING";
+        return  (or_1 || or_2)? sx(d.x + d.dx/2.0 - d.dx/20) : sx(d.x + d.dx/2.0);
+
       })
       .attr("y2", d => this.state.height - sy(d.y) + 5)
       .attr("fill", "none")
@@ -564,13 +383,46 @@ export class ProgHistAnnotatedBins extends Component {
       .attr("stroke-width", "2");
   }
 
-  drawBarHorRightLine(bins, idx, sx,sy) {
+  drawBarHorRightLine(bins, idx, sx,sy,changesInNewStreamedData) {
+
+
     this.state.canvas.selectAll(".histhorlineright"+idx)
       .data([bins[idx]])
       .enter()
       .append("line")
       .classed("histhorlineright"+idx, true)
-      .attr("x1", d => sx(d.x+d.dx/2))
+      .attr("x1", d => {
+
+        // if (idx==0){
+        //   if ( changesInNewStreamedData[idx][1]=="SPLITTING" ) {
+        //     return sx(d.x + d.dx / 2.0 + d.dx / 20)
+        //   }else
+        //     return sx(d.x + d.dx/2.0);
+        // } else if (idx==changesInNewStreamedData.length){
+        //
+        //   if (changesInNewStreamedData[idx - 1][2] == "SPLITTING")
+        //     return sx(d.x + d.dx/2.0 + d.dx/20);
+        //   else
+        //     return sx(d.x + d.dx/2.0);
+        //
+        // } else {
+        //   if ( changesInNewStreamedData[idx - 1][2] == "SPLITTING" || changesInNewStreamedData[idx][1] == "SPLITTING")
+        //     return sx(d.x + d.dx/2.0 + d.dx/20)
+        //   else
+        //     return sx(d.x + d.dx/2.0);
+        // }
+
+        let or_1 = (idx>-1 && idx<changesInNewStreamedData.length) && changesInNewStreamedData[idx][1]=="SPLITTING";
+        let or_2 = ((idx-1)>-1 && (idx-1)<changesInNewStreamedData.length) && changesInNewStreamedData[idx-1][2]=="SPLITTING";
+        return  (or_1 || or_2)? sx(d.x + d.dx/2.0 + d.dx/20) : sx(d.x + d.dx/2.0);
+
+
+        // let changesArray = changesInNewStreamedData[i];
+        // if (changesArray[1]=="SPLITTING")
+        //   return sx(d.x+d.dx/2.0+d.dx/20.0);
+        // else
+        //   return sx(d.x+d.dx/2.0)
+      })
       .attr("y1", d => this.state.height - sy(d.y) + 5)
       .attr("x2", d => {
         return sx( d.x + d.dx - d.dx / 20.0)
@@ -610,12 +462,23 @@ export class ProgHistAnnotatedBins extends Component {
 
 
 
-  drawRightBezierLine(bins, idx, sx,sy){
+  drawRightBezierLine(bins, idx, sx,sy, changesInNewStreamedData, change_idx){
+
+    let endPoint=0;
+    //let changesArray = changesInNewStreamedData[idx];
+
+    let or_1 = (idx>-1 && idx<changesInNewStreamedData.length) && changesInNewStreamedData[idx][1]=="SPLITTING";
+    let or_2 = ((idx-1)>-1 && (idx-1)<changesInNewStreamedData.length) && changesInNewStreamedData[idx-1][2]=="SPLITTING";
+    console.log(change_idx+":"+or_1+":"+ or_2);
+    endPoint = (or_1 || or_2)? (bins[idx].x+bins[idx].dx/2.0-bins[idx].dx/20.0) : (bins[idx].x+bins[idx].dx/2.0);
+
+
+
     let curvedata = [
       [sx(bins[idx].x), this.state.height+5],
       [sx(bins[idx].x)+bins[idx].dx/3.0,this.state.height - sy(bins[idx].y/1.2)+5],
       [sx(bins[idx].x+bins[idx].dx/2.5), this.state.height - sy(bins[idx].y)+5],
-      [sx(bins[idx].x+bins[idx].dx/2.0)+5, this.state.height - sy(bins[idx].y)+5]
+      [sx(endPoint), this.state.height - sy(bins[idx].y)+5]
     ];
 
 
@@ -633,12 +496,19 @@ export class ProgHistAnnotatedBins extends Component {
   }
 
 
-  drawLeftBezierLine(bins, idx, sx,sy){
+  drawLeftBezierLine(bins, idx, sx,sy, changesInNewStreamedData){
+    let endPoint=0;
+    let or_1 = (idx>-1 && idx<changesInNewStreamedData.length) && changesInNewStreamedData[idx][1]=="SPLITTING";
+    let or_2 = ((idx-1)>-1 && (idx-1)<changesInNewStreamedData.length) && changesInNewStreamedData[idx-1][2]=="SPLITTING";
+
+    endPoint = or_1 || or_2 ? (bins[idx].x+bins[idx].dx/2.0+bins[idx].dx/20.0) : (bins[idx].x+bins[idx].dx/2.0);
+
+
     let curvedata = [
       [sx(bins[idx].x+bins[idx].dx) - 5, this.state.height+5],
       [sx(bins[idx].x+bins[idx].dx - bins[idx].dx/20.0)-5, this.state.height - sy(bins[idx].y/1.2)+5],
       [sx(bins[idx].x+bins[idx].dx - bins[idx].dx/6.0)-5, this.state.height - sy(bins[idx].y)+5],
-      [sx(bins[idx].x+bins[idx].dx/2.0)-5, this.state.height - sy(bins[idx].y)+5]
+      [sx(endPoint), this.state.height - sy(bins[idx].y)+5]
     ];
 
 
@@ -655,56 +525,53 @@ export class ProgHistAnnotatedBins extends Component {
       .attr("fill", "none");
   }
 
-    drawBoxplots(bars, sx,sy,height, color){
-         bars.append("line")
-            .attr("class","boxplot")
-            .attr("x1", (d,i)=>sx(d.x+d.dx/2))
-            .attr("y1", (d,i)=>height-sy(d.y)-5)
-            .attr("x2", (d,i)=>sx(d.x+d.dx/2))
-            .attr("y2", (d,i)=>height-sy(d.y)+5)
-            .attr("fill", "none")
-            .attr("stroke", color)
-            .attr("stroke-width", "1")
-            ;
+    drawBoxplots(bins, idx, sx,sy,height, color){
 
-        bars.append("line")
-            .attr("class","boxplottop")
-            .attr("x1", (d,i)=>sx(d.x+d.dx/2)-2)
-            .attr("y1", (d,i)=>height-sy(d.y)-5)
-            .attr("x2", (d,i)=>sx(d.x+d.dx/2)+2)
-            .attr("y2", (d,i)=>height-sy(d.y)-5)
-            .attr("fill", "none")
-            .attr("stroke", color)
-            .attr("stroke-width", "1")
+      this.state.canvas.selectAll(".boxplot"+idx)
+        .data([bins[idx]])
+        .enter()
+        .append("line")
+        .attr("class","boxplot")
+        .attr("x1", (d,i)=>sx(d.x+d.dx/2))
+        .attr("y1", (d,i)=>height-sy(d.y))
+        .attr("x2", (d,i)=>sx(d.x+d.dx/2))
+        .attr("y2", (d,i)=>height-sy(d.y)+10)
+        .attr("fill", "none")
+        .attr("stroke", color)
+        .attr("stroke-width", "1")
         ;
 
-        bars.append("line")
-            .attr("class","boxplotbottom")
-            .attr("x1", (d,i)=>sx(d.x+d.dx/2)-2)
-            .attr("y1", (d,i)=>height-sy(d.y)+5)
-            .attr("x2", (d,i)=>sx(d.x+d.dx/2)+2)
-            .attr("y2", (d,i)=>height-sy(d.y)+5)
-            .attr("fill", "none")
-            .attr("stroke", color)
-            .attr("stroke-width", "1")
-        ;
+      // this.state.canvas.selectAll(".boxplottop"+idx)
+      //   .data([bins[idx]])
+      //   .enter()
+      //   .append("line")
+      //   .attr("class","boxplottop")
+      //   .attr("x1", (d,i)=>sx(d.x+d.dx/2)-2)
+      //   .attr("y1", (d,i)=>height-sy(d.y))
+      //   .attr("x2", (d,i)=>sx(d.x+d.dx/2)+2)
+      //   .attr("y2", (d,i)=>height-sy(d.y))
+      //   .attr("fill", "none")
+      //   .attr("stroke", color)
+      //   .attr("stroke-width", "1")
+      //   ;
+      //
+      // this.state.canvas.selectAll(".boxplotbottom"+idx)
+      //   .data([bins[idx]])
+      //   .enter()
+      //   .append("line")
+      //   .attr("class","boxplotbottom")
+      //   .attr("x1", (d,i)=>sx(d.x+d.dx/2)-2)
+      //   .attr("y1", (d,i)=>height-sy(d.y)+10)
+      //   .attr("x2", (d,i)=>sx(d.x+d.dx/2)+2)
+      //   .attr("y2", (d,i)=>height-sy(d.y)+10)
+      //   .attr("fill", "none")
+      //   .attr("stroke", color)
+      //   .attr("stroke-width", "1")
+      //   ;
 
 
     }
 
-    drawPie(canvas, x,y,r,w, dir, color){
-        let p = Math.PI *2;
-        let group = canvas.append("g").attr("transform", "translate("+x+","+y+")");
-        let startAngle_ = dir==="up"?p*0.75:p*0.25;
-        let endAngle_ = dir==="up"?p*1.25:p*0.75;
-        let arc = d3.svg.arc()
-            .innerRadius(r-w)
-            .outerRadius(r)
-            .startAngle(startAngle_)
-            .endAngle(endAngle_);
-        group.append("path").attr("d", arc)
-            .attr("fill", color);
-    }
 
 
 
@@ -745,35 +612,34 @@ export class ProgHistAnnotatedBins extends Component {
           .attr("stroke", (d, i) => "#33aade")
           .attr("stroke-width", (d, i) => 2 )
         ;
+
+
+      this.state.canvas.selectAll(".histverline_merge_topline"+idx)
+        .data([bins[idx]])
+        .enter()
+        .append("line")
+        .attr("class", (d, i) => {
+          //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
+          return "histverline_merge_topline"+idx;
+        })
+        .attr("x1", (d, i) => sx(d.x+d.dx/80.0))
+        .attr("y1", (d, i) => this.state.height - sy(minY/2.0)+5)
+        .attr("x2", (d, i) => sx(d.x-d.dx/20-d.dx/80.0))
+        .attr("y2", (d, i) => this.state.height - sy(minY/2.0)+5)
+        .attr("fill", "none")
+        .attr("stroke", (d, i) => {
+          //   if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
+          return "#33aade";
+        })
+        .attr("stroke-width", (d, i) => {
+          //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
+
+          return "2";
+          //return i == (b1b2_idx+1) ? "purple" : "#33aade";
+        })
+      ;
+
       return histverlineG1;
-
-
-
-      // let right = [bin_[idx]];
-      // this.state.canvas.selectAll(".histverline_merge_right")
-      //   .data(right)
-      //   .enter()
-      //   .append("line")
-      //   .attr("class", (d, i) => {
-      //     //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-      //     return "histverline_merge_right";
-      //   })
-      //   .attr("x1", (d, i) =>  sx(d.x))
-      //   .attr("y1", (d, i) => this.state.height+5)
-      //   .attr("x2", (d, i) => sx(d.x))
-      //   .attr("y2", (d, i) => this.state.height - sy(minY/2.0)+5)
-      //   .attr("fill", "none")
-      //   .attr("stroke", (d, i) => {
-      //     //   if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-      //     return "red";
-      //   })
-      //   .attr("stroke-width", (d, i) => {
-      //     //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-      //
-      //     return "2";
-      //     //return i == (b1b2_idx+1) ? "purple" : "#33aade";
-      //   })
-      // ;
     }
 
   drawMergeRightLine(bins, idx, sx, sy){
@@ -796,147 +662,28 @@ export class ProgHistAnnotatedBins extends Component {
         .attr("stroke-width", (d, i) => "2")
       ;
     return histverlineG2;
-    // let left = [bin_[idx]];
-    // this.state.canvas.selectAll(".histverline_merge_left")
-    //   .data(left)
-    //   .enter()
-    //   .append("line")
-    //   .attr("class", (d, i) => {
-    //     //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-    //     return "histverline_merge_left";
-    //   })
-    //   .attr("x1", (d, i) => sx(d.x+d.dx-d.dx/20.0))
-    //   .attr("y1", (d, i) => this.state.height+5)
-    //   .attr("x2", (d, i) => sx(d.x+d.dx-d.dx/20.0))
-    //   .attr("y2", (d, i) => this.state.height - sy(minY/2)+5)
-    //   .attr("fill", "none")
-    //   .attr("stroke", (d, i) => {
-    //     //   if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-    //     return "#ffffff";
-    //   })
-    //   .attr("stroke-width", (d, i) => {
-    //     //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-    //
-    //     return "2";
-    //     //return i == (idx+1) ? "purple" : "#33aade";
-    //   })
-    // ;
-
   }
 
-    drawMergeLines (arr,sx,sy) {
 
-      let minY = arr[0].y;
-
-      if (arr.length==2 && arr[1].y<minY )
-          minY = arr[1].y;
-
-
-
-      let left = [arr[0]];
-      this.state.canvas.selectAll(".histverline_merge_left")
-        .data(left)
-          .enter()
-          .append("line")
-          .attr("class", (d, i) => {
-            //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-            return "histverline_merge_left";
-          })
-        .attr("x1", (d, i) => sx(d.x+d.dx-d.dx/20.0))
-        .attr("y1", (d, i) => this.state.height+5)
-        .attr("x2", (d, i) => sx(d.x+d.dx-d.dx/20.0))
-        .attr("y2", (d, i) => this.state.height - sy(minY/2)+5)
-          .attr("fill", "none")
-          .attr("stroke", (d, i) => {
-            //   if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-            return "#ffffff";
-          })
-          .attr("stroke-width", (d, i) => {
-            //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-
-            return "2";
-            //return i == (idx+1) ? "purple" : "#33aade";
-          })
-        ;
-
-
-
-      if (arr.length==2){
-
-        let right = [arr[1]];
-        this.state.canvas.selectAll(".histverline_merge_right")
-          .data(right)
-          .enter()
-          .append("line")
-          .attr("class", (d, i) => {
-            //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-            return "histverline_merge_right";
-          })
-          .attr("x1", (d, i) =>  sx(d.x))
-          .attr("y1", (d, i) => this.state.height+5)
-          .attr("x2", (d, i) => sx(d.x))
-          .attr("y2", (d, i) => this.state.height - sy(minY/2.0)+5)
-          .attr("fill", "none")
-          .attr("stroke", (d, i) => {
-            //   if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-            return "red";
-          })
-          .attr("stroke-width", (d, i) => {
-            //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-
-            return "2";
-            //return i == (b1b2_idx+1) ? "purple" : "#33aade";
-          })
-        ;
-
-
-
-        this.state.canvas.selectAll(".histverline_merge_topline")
-          .data(right)
-          .enter()
-          .append("line")
-          .attr("class", (d, i) => {
-            //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-            return "histverline_merge_topline";
-          })
-          .attr("x1", (d, i) => sx(d.x))
-          .attr("y1", (d, i) => this.state.height - sy(minY/2.0)+5)
-          .attr("x2", (d, i) => sx(d.x-d.dx/20))
-          .attr("y2", (d, i) => this.state.height - sy(minY/2.0)+5)
-          .attr("fill", "none")
-          .attr("stroke", (d, i) => {
-            //   if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-            return "#33aade";
-          })
-          .attr("stroke-width", (d, i) => {
-            //if (changesInNewStreamedData[(i-1)*3]=="BECOMING_FAR")
-
-            return "2";
-            //return i == (b1b2_idx+1) ? "purple" : "#33aade";
-          })
-        ;
-
-      }
-
-    }
 
     drawCrack(bins, idx,sx,sy) {
       let arr = [bins[idx]];
 
-      this.state.canvas.selectAll(".histhorline_crack_top_hl"+idx)
-        .data(arr)
-        .enter()
-        .append("line")
-        .attr("class", (d,i)=>{return "histhorline_crack_top_hl"+idx})
-        .attr("x1", d => sx(d.x+d.dx/2-d.dx/20.0))
-        .attr("y1", d => this.state.height - sy(d.y)+5)
-        .attr("x2", d => {
-          return sx(d.x+d.dx/2+d.dx/20.0)
-        })
-        .attr("y2", d => this.state.height - sy(d.y)+5)
-        .attr("fill", "none")
-        .attr("stroke", "#ffffff")
-        .attr("stroke-width", "2");
+      // this.state.canvas.selectAll(".histhorline_crack_top_hl"+idx)
+      //   .data(arr)
+      //   .enter()
+      //   .append("line")
+      //   .attr("class", (d,i)=>{return "histhorline_crack_top_hl"+idx})
+      //   .attr("x1", d => sx(d.x+d.dx/2-d.dx/20.0))
+      //   .attr("y1", d => this.state.height - sy(d.y)+5)
+      //   .attr("x2", d => {
+      //     return sx(d.x+d.dx/2+d.dx/20.0)
+      //   })
+      //   .attr("y2", d => this.state.height - sy(d.y)+5)
+      //   .attr("fill", "none")
+      //   //.attr("stroke", "#ffffff")
+      //   .attr("stroke", "red")
+      //   .attr("stroke-width", "2");
 
       this.state.canvas.selectAll(".histhorline_crack_left_line"+idx)
         .data(arr)
@@ -1024,6 +771,7 @@ export class ProgHistAnnotatedBins extends Component {
         this.refs={txtBinsCount:null, txtInterval:null, txtBinCountGuess:null};
         this.state = null;
         this.state = {
+            streamingDataIdx: 0,
             interval: 3000,
             binsCount:5,
             ages:[],

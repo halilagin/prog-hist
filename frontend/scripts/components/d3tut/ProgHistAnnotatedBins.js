@@ -68,10 +68,15 @@ export class ProgHistAnnotatedBins extends Component {
                   <div className="ph_buttonitem"><button key="refresh"  onClick={this.refresh.bind(this)} >Refresh</button></div>
                 </div>
             </div>
-            <div className="svgcontainer">
 
+            <div className="histscontainer">
+              <div className="svgcontainer">
+
+              </div>
+              <div className="classic_histbar_svgcontainer">
+
+              </div>
             </div>
-
             <div id="userevaluation">
 
             </div>
@@ -81,7 +86,6 @@ export class ProgHistAnnotatedBins extends Component {
 
 
     refresh(){
-
         this.stopTimer();
         this.state.canvas.selectAll("*").remove();
         this.state.canvas=null;
@@ -178,7 +182,21 @@ export class ProgHistAnnotatedBins extends Component {
                 .append("g")
                 .attr("transform", "translate(20,20)")
                 ;
-        this.state.timer = setInterval(()=>{this.loopDrawingProgHist();}
+
+
+
+      if (this.state.classicHistCanvas==null)
+        this.state.classicHistCanvas = d3.select(".classic_histbar_svgcontainer").append("svg")
+          .attr("class", "classic_histbar_svgcontainer")
+          .attr("width", this.state.width)
+          .attr("height",this.state.height+this.state.padding)
+          .append("g")
+          .attr("transform", "translate(20,20)")
+        ;
+      this.setState(this.state);
+
+
+      this.state.timer = setInterval(()=>{this.loopDrawingProgHist();}
             ,timeInterval);
     }
 
@@ -195,6 +213,7 @@ export class ProgHistAnnotatedBins extends Component {
         this.setStream(resp.data);
         console.log("data stream created, this.state.binsCount ", this.state.binsCount );
         this.drawBins(hist);
+        this.drawClassicHistBins(d3.layout.histogram());
         this.state.streamingDataIdx = this.state.streamingDataIdx +1;
         this.setState(this.state);
 
@@ -246,7 +265,7 @@ export class ProgHistAnnotatedBins extends Component {
 
       //draw left line
       if (idx == 0) {
-        this.drawVerLeftLine(bins, idx, sx, sy);
+        this.drawVerLeftLine(this.state.canvas, bins, idx, sx, sy);
         this.drawBarHorLeftLine(bins, idx, sx, sy,changesInNewStreamedData);
       } else if (idx == changesInNewStreamedData.length) {
         if (changesInNewStreamedData[idx - 1][0] == "BECOMING_FAR") {
@@ -256,7 +275,7 @@ export class ProgHistAnnotatedBins extends Component {
           this.drawMergeLeftLine(bins, idx, sx, sy);
           this.drawBarHorLeftLine(bins, idx, sx, sy,changesInNewStreamedData);
         } else {
-          this.drawVerLeftLine(bins, idx, sx, sy);
+          this.drawVerLeftLine(this.state.canvas, bins, idx, sx, sy);
           this.drawBarHorLeftLine(bins, idx, sx, sy,changesInNewStreamedData);
         }
 
@@ -269,14 +288,14 @@ export class ProgHistAnnotatedBins extends Component {
           this.drawMergeLeftLine(bins, idx, sx, sy);
           this.drawBarHorLeftLine(bins, idx, sx, sy,changesInNewStreamedData);
         } else {
-          this.drawVerLeftLine(bins, idx, sx, sy);
+          this.drawVerLeftLine(this.state.canvas, bins, idx, sx, sy);
           this.drawBarHorLeftLine(bins, idx, sx, sy,changesInNewStreamedData);
         }
       }
 
       //draw right line
       if (idx == changesInNewStreamedData.length) {
-        this.drawVerRightLine(bins, idx, sx, sy);
+        this.drawVerRightLine(this.state.canvas, bins, idx, sx, sy);
         this.drawBarHorRightLine(bins, idx, sx, sy, changesInNewStreamedData);
       } else if (idx == 0) {
         if (changesInNewStreamedData[idx][0] == "BECOMING_FAR") {
@@ -285,7 +304,7 @@ export class ProgHistAnnotatedBins extends Component {
           this.drawMergeRightLine(bins, idx, sx, sy);
           this.drawBarHorRightLine(bins, idx, sx, sy, changesInNewStreamedData);
         } else {
-          this.drawVerRightLine(bins, idx, sx, sy);
+          this.drawVerRightLine(this.state.canvas, bins, idx, sx, sy);
           this.drawBarHorRightLine(bins, idx, sx, sy, changesInNewStreamedData);
         }
 
@@ -297,7 +316,7 @@ export class ProgHistAnnotatedBins extends Component {
           this.drawMergeRightLine(bins, idx, sx, sy);
           this.drawBarHorRightLine(bins, idx, sx, sy, changesInNewStreamedData);
         } else {
-          this.drawVerRightLine(bins, idx, sx, sy);
+          this.drawVerRightLine(this.state.canvas, bins, idx, sx, sy);
           this.drawBarHorRightLine(bins, idx, sx, sy, changesInNewStreamedData);
         }
       }
@@ -327,8 +346,8 @@ export class ProgHistAnnotatedBins extends Component {
 
 
 
-  drawBarHorizontalLine(bins, idx, sx,sy) {
-    this.state.canvas.selectAll(".histhorline"+idx)
+  drawBarHorizontalLine(canvas, bins, idx, sx,sy) {
+    canvas.selectAll(".histhorline"+idx)
       .data([bins[idx]])
       .enter()
       .append("line")
@@ -353,25 +372,6 @@ export class ProgHistAnnotatedBins extends Component {
       .attr("x1", d => sx(d.x))
       .attr("y1", d => this.state.height - sy(d.y) + 5)
       .attr("x2", d => {
-
-        // if (idx==0){
-        //   if ( changesInNewStreamedData[idx][1]=="SPLITTING" ) {
-        //     return sx(d.x + d.dx / 2.0 - d.dx / 20)
-        //   }else
-        //     return sx(d.x + d.dx/2.0);
-        // } else if (idx==changesInNewStreamedData.length){
-        //   if (changesInNewStreamedData[idx - 1][2] == "SPLITTING")
-        //     return sx(d.x + d.dx/2.0 - d.dx/20)
-        //   else
-        //     return sx(d.x + d.dx/2.0);
-        //
-        // } else {
-        //   if (changesInNewStreamedData[idx][1] == "SPLITTING")
-        //     return sx(d.x + d.dx/2.0 - d.dx/20)
-        //   else
-        //     return sx(d.x + d.dx/2.0);
-        // }
-
         let or_1 = (idx>-1 && idx<changesInNewStreamedData.length) && changesInNewStreamedData[idx][1]=="SPLITTING";
         let or_2 = ((idx-1)>-1 && (idx-1)<changesInNewStreamedData.length) && changesInNewStreamedData[idx-1][2]=="SPLITTING";
         return  (or_1 || or_2)? sx(d.x + d.dx/2.0 - d.dx/20) : sx(d.x + d.dx/2.0);
@@ -393,35 +393,9 @@ export class ProgHistAnnotatedBins extends Component {
       .classed("histhorlineright"+idx, true)
       .attr("x1", d => {
 
-        // if (idx==0){
-        //   if ( changesInNewStreamedData[idx][1]=="SPLITTING" ) {
-        //     return sx(d.x + d.dx / 2.0 + d.dx / 20)
-        //   }else
-        //     return sx(d.x + d.dx/2.0);
-        // } else if (idx==changesInNewStreamedData.length){
-        //
-        //   if (changesInNewStreamedData[idx - 1][2] == "SPLITTING")
-        //     return sx(d.x + d.dx/2.0 + d.dx/20);
-        //   else
-        //     return sx(d.x + d.dx/2.0);
-        //
-        // } else {
-        //   if ( changesInNewStreamedData[idx - 1][2] == "SPLITTING" || changesInNewStreamedData[idx][1] == "SPLITTING")
-        //     return sx(d.x + d.dx/2.0 + d.dx/20)
-        //   else
-        //     return sx(d.x + d.dx/2.0);
-        // }
-
         let or_1 = (idx>-1 && idx<changesInNewStreamedData.length) && changesInNewStreamedData[idx][1]=="SPLITTING";
         let or_2 = ((idx-1)>-1 && (idx-1)<changesInNewStreamedData.length) && changesInNewStreamedData[idx-1][2]=="SPLITTING";
         return  (or_1 || or_2)? sx(d.x + d.dx/2.0 + d.dx/20) : sx(d.x + d.dx/2.0);
-
-
-        // let changesArray = changesInNewStreamedData[i];
-        // if (changesArray[1]=="SPLITTING")
-        //   return sx(d.x+d.dx/2.0+d.dx/20.0);
-        // else
-        //   return sx(d.x+d.dx/2.0)
       })
       .attr("y1", d => this.state.height - sy(d.y) + 5)
       .attr("x2", d => {
@@ -440,8 +414,8 @@ export class ProgHistAnnotatedBins extends Component {
 
 
 
-  drawVerRightLine(bins, idx, sx, sy){
-    var histverlineG2 = this.state.canvas.selectAll(".histverlineright"+idx)
+  drawVerRightLine(canvas, bins, idx, sx, sy){
+    var histverlineG2 = canvas.selectAll(".histverlineright"+idx)
         .data([bins[idx]])
         .enter()
         .append("line")
@@ -575,8 +549,8 @@ export class ProgHistAnnotatedBins extends Component {
 
 
 
-  drawVerLeftLine(bins, idx, sx, sy){
-    var histverlineG1 = this.state.canvas.selectAll(".histverlineleft"+idx)
+  drawVerLeftLine(canvas, bins, idx, sx, sy){
+    var histverlineG1 = canvas.selectAll(".histverlineleft"+idx)
         .data([bins[idx]])
         .enter()
         .append("line")
@@ -716,24 +690,18 @@ export class ProgHistAnnotatedBins extends Component {
         .attr("stroke-width", "2");
     }
 
-    drawSinus(canvas, x,y,r,w, color){
-        this.drawPie(canvas, x,y, r/2,w, "up",color);
-        this.drawPie(canvas, x+r,y, r/2,w, "down", color);
-
-    }
 
 
 
   drawClassicHistBins(hist ) {
-    this.state.canvas.selectAll("*").remove();
-    this.state.canvas.append("text")
+    this.state.classicHistCanvas.selectAll("*").remove();
+    this.state.classicHistCanvas.append("text")
       .attr("x", d => this.state.width / 2 - 20)
       .attr("y", d => this.state.height + this.state.padding * 0.5)
       .attr("text-anchor", "middle")
       .attr("fill", "#000000")
-      .text("prog-hist-annotated");
+      .text("classic-histogram");
 
-    console.log("bin.changes", this.streamedDataContext.binchanges);
 
     var sx = d3.scale.linear()
       .domain([0, d3.max(this.streamedDataContext.histogramData)])
@@ -745,7 +713,7 @@ export class ProgHistAnnotatedBins extends Component {
 
 
     let gXaxis = d3.svg.axis().scale(sx).orient("bottom");
-    this.state.canvas.append("g").style({'stroke': 'Black', 'fill': 'none', 'stroke-width': '1px'})
+    this.state.classicHistCanvas.append("g").style({'stroke': 'Black', 'fill': 'none', 'stroke-width': '1px'})
       .call(gXaxis)
       .attr("transform", "translate(-5," + (this.state.height + 5) + ")");
     //between bins : ["BECOMING_FAR", "SUPPORTS_INCREASE", "MERGING"]. zeroth index stores the change between bins
@@ -754,13 +722,10 @@ export class ProgHistAnnotatedBins extends Component {
     //CHANGE_LABELS_BTW_BINS=["BECOMING_FAR", "SUPPORTS_INCREASE", "MERGING"]
     //CHANGE_LABELS_OF_BIN=["SPLITTING", "SUPPORTS_CONCEPT", "SPLITTING"]
     for (let idx = 0; idx < this.streamedDataContext.bins.length; idx++) {
-      let changesInNewStreamedData = this.streamedDataContext.binchanges;
-      let bins = this.streamedDataContext.bins;
-      //console.log("changesInNewStreamedData["+idx+"]",changesInNewStreamedData[idx]);
-      this.drawVerLeftLine(bins, idx, sx, sy);
-      this.drawVerRightLine(bins, idx, sx, sy);
-      this.drawBarHorLeftLine(bins, idx, sx, sy);
-      this.drawBarHorRightLine(bins, idx, sx, sy);
+      this.drawVerLeftLine(this.state.classicHistCanvas, this.streamedDataContext.bins, idx, sx, sy);
+      this.drawVerRightLine(this.state.classicHistCanvas, this.streamedDataContext.bins, idx, sx, sy);
+      this.drawBarHorizontalLine(this.state.classicHistCanvas, this.streamedDataContext.bins, idx, sx, sy);
+      //this.drawBarHorRightLine(bins, idx, sx, sy);
     }
   }
 
@@ -771,6 +736,7 @@ export class ProgHistAnnotatedBins extends Component {
         this.refs={txtBinsCount:null, txtInterval:null, txtBinCountGuess:null};
         this.state = null;
         this.state = {
+
             streamingDataIdx: 0,
             interval: 3000,
             binsCount:5,
@@ -779,6 +745,7 @@ export class ProgHistAnnotatedBins extends Component {
             height:400,
             padding:80,
             canvas:null,
+            classicHistCanvas: null,
             timer:null,
             mountClass:"ProgHistClassic"
         };

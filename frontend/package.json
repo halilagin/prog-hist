@@ -26,15 +26,18 @@
   },
   "homepage": "https://github.com/vasanthk/react-es6-webpack-boilerplate",
   "dependencies": {
+    "animate.css": "^3.5.2",
     "axios": "^0.16.1",
     "babel-runtime": "^6.20.0",
+    "css-loader": "^0.28.4",
     "d3": "3.5.17",
     "d3-shape": "^1.2.0",
     "nvd3": "^1.8.5",
     "prop-types": "^15.5.10",
     "react": "^15.4.1",
     "react-dom": "^15.4.1",
-    "react-nvd3": "^0.5.7"
+    "react-nvd3": "^0.5.7",
+    "reveal.js": "^3.5.0"
   },
   "devDependencies": {
     "babel-core": "^6.21.0",

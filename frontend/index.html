@@ -11,16 +11,27 @@
         crossorigin="anonymous">
   <link rel="stylesheet" href="http://localhost:5002/public/bootstrap337/css/bootstrap.css">
   <link rel="stylesheet" type="text/css" href="./node_modules/nvd3/build/nv.d3.min.css">
-
+  <link rel="stylesheet" type="text/css" href="./node_modules/animate.css/animate.css">
+  <link rel="stylesheet" href="./node_modules/reveal.js/css/reveal.css">
+  <link rel="stylesheet" href="./node_modules/reveal.js/css/theme/white.css">
 
   <style>
+
+
+    .ProgHistMainContainer{
+
+    }
 
     .ph_clear{
       clear: both;
     }
     .ph_bincount{
-      width:30px;
-      height: 40px;
+      width:40px;
+      height: 60px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+
     }
     .ph_buttons{
       margin: 5px 0px 5px 0px;
@@ -73,23 +84,23 @@
 
 
     .histscontainer{
-      position: relative;
-      width: 900px;
-      height:600px;
-      margin-top:50px;
+      /*position: relative;*/
+      /*width: 900px;*/
+      /*height:600px;*/
+      /*margin-top:50px;*/
 
 
     }
     .svgcontainer{
-      position: relative;
-      float: left;
+      /*position: relative;*/
+      /*float: left;*/
     }
 
 
 
     .classic_histbar_svgcontainer{
-      position: relative;
-      float: right;
+      /*position: relative;*/
+      /*float: right;*/
 
     }
 
@@ -103,6 +114,33 @@
 </head>
 
 <body>
+<div class="reveal" id="experimentIntroduction">
+  <div class="slides">
+    <section>
+      <div >
+        <div>
+          <p style="font-size: 66px;font-weight: bold;">Welcome to my experiment!</p>
+          <p style="font-size:44px;">For further instructions, please click the button <img src="/public/images/right-arrow.png"></img> on bottom-right, press "space" in the keyboard.</p>
+          </div>
+
+      </div>
+    </section>
+    <section>
+      <div>
+        <p>The experiment will last in 5 minutes.</p>
+        <p>First, you will see some explanations in slides. In last slide, you will see a <button>Start</button> button. When you click on the button. The experiment will start.</p>
+      </div>
+    </section>
+    <section>
+      <div>
+        <p>You will see an histogram.</p>
+        <p>First, you will see some explanations in slides. In last slide, you will see a <button>Start</button> button. When you click on the button. The experiment will start.</p>
+      </div>
+    </section>
+
+    <section><button onclick="startExperiment()">Click to Start</button></section>
+  </div>
+</div>
 <div></div>
 <div class="container">
   <div class="h1bgraph"></div>
@@ -124,7 +162,15 @@
 <script src="/dist/bundle.js"></script>
 <script src="/public/jquery321.js"></script>
 <script src="/public/bootstrap337/js/bootstrap.js"></script>
-<!--<script src="/public/c3.min.js"></script>-->
+<script src="./node_modules/reveal.js/js/reveal.js"></script>
+<script>
+  Reveal.initialize();
 
+  function startExperiment(){
+     $("#experimentIntroduction").remove();
+    //RenderedHistogram.show();
+      //alert("start experiment");
+  }
+</script>
 </body>
 </html>

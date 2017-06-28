@@ -15,10 +15,10 @@ export class ProgHistAnnotatedBins extends Component {
   CHANGE_LABELS_BTW_BINS=["BECOMING_FAR", "SUPPORTS_INCREASE", "MERGING"]
   CHANGE_LABELS_OF_BIN=["SPLITTING", "SUPPORTS_CONCEPT", "SPLITTING"]
 
-
+  visible=true;
   streamedDataContext=null;
   userData = {clicks:[], binCountGuess:0, cost:0, startTime:-1};
-
+  histType=null;
   // changes array has 3 elements. first indicates changes between 2 bins,
   // second indicates change in first bin and the last shows changes in second bin.
   // example
@@ -37,35 +37,97 @@ export class ProgHistAnnotatedBins extends Component {
 
   }
 
+
+  /*
+   <div style={{display:this.getDisplay()}}>
+   <div className="ProgHistMainContainer">
+   <div>
+   <div> Guess for number of gaussians</div>
+   <div><input ref="txtBinCountGuess" defaultValue={this.userData.binCountGuess} />
+   <button key="setGuessOfGaussCount"  onClick={this.setGuessOfGaussCount.bind(this)} >OK</button>
+   </div>
+   </div>
+   <div className="ph_bincountdiv">
+   <div>Bins Count</div>
+   <div className="ph_bincount_txt_cntr">
+   <input ref="txtBinsCount" defaultValue={this.state.binsCount} className="ph_bincount" />
+   </div>
+   <div className="ph_bincount_updown_cntr">
+   <div><span className="glyphicon glyphicon-chevron-up"  onClick={this.increaseBinCount.bind(this)}></span></div>
+   <div><span className="glyphicon glyphicon-chevron-down" onClick={this.decreaseBinCount.bind(this)}></span></div>
+   </div>
+   </div>
+   <div className="ph_clear"> </div>
+
+   <div className="interval_cntr">Interval <input ref="txtInterval" defaultValue={this.state.interval} />ms <button key="start"   onClick={this.startTimer.bind(this)} >Start</button></div>
+   <div className="ph_buttons">
+   <div className="ph_buttonitem"> <button key="start"   onClick={this.stopTimer.bind(this)} >Stop</button></div>
+    <div className="ph_buttonitem"><button key="refresh"  onClick={this.refresh.bind(this)} >Refresh</button></div>
+    </div>
+    </div>
+
+<div className="histscontainer">
+  <div className="svgcontainer">
+
+  </div>
+  <div className="classic_histbar_svgcontainer">
+
+  </div>
+  </div>
+  <div id="userevaluation">
+
+  </div>
+  </div>
+  */
+
     render() {
 
 
         return (
-          <div>
-            <div>
-                <div>
+          <div style={{display:this.getDisplay()}}>
+            <div className="ProgHistMainContainer">
+                <div style={{display:"none"}}>
                   <div> Guess for number of gaussians</div>
                   <div><input ref="txtBinCountGuess" defaultValue={this.userData.binCountGuess} />
                     <button key="setGuessOfGaussCount"  onClick={this.setGuessOfGaussCount.bind(this)} >OK</button>
                   </div>
                 </div>
-                <div className="ph_bincountdiv">
-                  <div>Bins Count</div>
-                  <div className="ph_bincount_txt_cntr">
-                    <input ref="txtBinsCount" defaultValue={this.state.binsCount} className="ph_bincount" />
-                  </div>
-                  <div className="ph_bincount_updown_cntr">
-                    <div><span className="glyphicon glyphicon-chevron-up"  onClick={this.increaseBinCount.bind(this)}></span></div>
-                    <div><span className="glyphicon glyphicon-chevron-down" onClick={this.decreaseBinCount.bind(this)}></span></div>
-                  </div>
-                </div>
+
                 <div className="ph_clear"> </div>
 
-                <div className="interval_cntr">Interval <input ref="txtInterval" defaultValue={this.state.interval} />ms <button key="start"   onClick={this.startTimer.bind(this)} >Start</button></div>
+                <div className="interval_cntr" style={{display:"none"}}>Interval <input ref="txtInterval" defaultValue={this.state.interval} />ms <button key="start"   onClick={this.startTimer.bind(this)} >Start</button></div>
                 <div className="ph_buttons">
-                  <div className="ph_buttonitem"> <button key="start"   onClick={this.stopTimer.bind(this)} >Stop</button></div>
+                  {/*<div className="ph_buttonitem"> <button key="start"   onClick={this.stopTimer.bind(this)} >Stop</button></div>*/}
                   {/*<div className="ph_buttonitem"> <button key="generateData"   onClick={this.generateData.bind(this)} >generateData</button></div>*/}
-                  <div className="ph_buttonitem"><button key="refresh"  onClick={this.refresh.bind(this)} >Refresh</button></div>
+                  {/*<div className="ph_buttonitem"><button key="refresh"  onClick={this.refresh.bind(this)} >Refresh</button></div>*/}
+
+                  <div>
+                    <div className="ph_buttonitem"> <button key="start"   onClick={this.toggleStopStart.bind(this)} >{this.getStopStartButtonText()}</button></div>
+
+                    <div className="ph_bincountdiv">
+                      <div >
+                        <div className="ph_bincount_txt_cntr" >
+                          <input ref="txtBinsCount" defaultValue={this.state.binsCount} className="ph_bincount" />
+                        </div>
+                      </div>
+                      <div className="ph_bincount_updown_cntr">
+                        <div><span className="glyphicon glyphicon-chevron-up"  onClick={this.increaseBinCount.bind(this)}></span></div>
+                        <div>bins</div>
+                        <div><span className="glyphicon glyphicon-chevron-down" onClick={this.decreaseBinCount.bind(this)}></span></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{float:"left", margin:"5px"}} className="btn btn-primary"><span>0</span></div>
+                      <div style={{float:"left", margin:"5px"}} className="btn btn-primary"><span>1</span></div>
+                      <div style={{float:"left", margin:"5px"}} className="btn btn-primary"><span>2</span></div>
+                      <div style={{float:"left", margin:"5px"}} className="btn btn-primary"><span>3</span></div>
+                      <div style={{float:"left", margin:"5px"}} className="btn btn-primary"><span>4</span></div>
+                      <div style={{float:"left", margin:"5px"}} className="btn btn-primary"><span>5</span></div>
+                      <div style={{float:"left", margin:"5px"}} className="btn btn-primary"><span>6</span></div>
+                      <div style={{float:"left", margin:"5px"}} className="btn btn-primary"><span>7</span></div>
+
+                    </div>
+                  </div>
                 </div>
             </div>
 
@@ -84,6 +146,36 @@ export class ProgHistAnnotatedBins extends Component {
         );
     }
 
+
+  show(){
+    this.state.visible = true;
+
+  }
+  hide(){
+    this.state.visible = false;
+  }
+
+  toggleDisplay(){
+      this.state.visible = !this.state.visible;
+      this.setState(this.state);
+  }
+
+  getDisplay(){
+    return this.state.visible?"block":"none";
+  }
+
+  getStopStartButtonText(){
+    return this.state.stopStart?"Stop":"Start";
+  }
+
+  toggleStopStart(){
+    this.state.stopStart = !this.state.stopStart;
+    this.setState(this.state);
+    if (this.state.stopStart)
+      this.startTimer();
+    else
+      this.stopTimer();
+  }
 
     refresh(){
         this.stopTimer();
@@ -163,9 +255,7 @@ export class ProgHistAnnotatedBins extends Component {
     }
 
 
-    componentWillReceiveProps(props) {
 
-    }
 
     start(){
         let timeInterval=1000;
@@ -174,7 +264,7 @@ export class ProgHistAnnotatedBins extends Component {
 
 
 
-        if (this.state.canvas==null)
+        if (this.histType=="AnnotatedHistogram" && this.state.canvas==null)
             this.state.canvas = d3.select(".svgcontainer").append("svg")
                 .attr("class", "svg_container")
                 .attr("width", this.state.width)
@@ -185,7 +275,7 @@ export class ProgHistAnnotatedBins extends Component {
 
 
 
-      if (this.state.classicHistCanvas==null)
+      if ( this.histType=="ClassicHistogram" && this.state.classicHistCanvas==null)
         this.state.classicHistCanvas = d3.select(".classic_histbar_svgcontainer").append("svg")
           .attr("class", "classic_histbar_svgcontainer")
           .attr("width", this.state.width)
@@ -212,8 +302,13 @@ export class ProgHistAnnotatedBins extends Component {
       .then((resp) => {
         this.setStream(resp.data);
         console.log("data stream created, this.state.binsCount ", this.state.binsCount );
-        this.drawBins(hist);
-        this.drawClassicHistBins(d3.layout.histogram());
+
+        if (this.histType=="AnnotatedHistogram")
+          this.drawBins(hist);
+
+        if (this.histType=="ClassicHistogram")
+          this.drawClassicHistBins(d3.layout.histogram());
+
         this.state.streamingDataIdx = this.state.streamingDataIdx +1;
         this.setState(this.state);
 
@@ -736,10 +831,11 @@ export class ProgHistAnnotatedBins extends Component {
         this.refs={txtBinsCount:null, txtInterval:null, txtBinCountGuess:null};
         this.state = null;
         this.state = {
-
+            stopStart:false, //false:stop, true:start
+            visible:false,
             streamingDataIdx: 0,
             interval: 3000,
-            binsCount:5,
+            binsCount:10,
             ages:[],
             width:400,
             height:400,
@@ -756,6 +852,7 @@ export class ProgHistAnnotatedBins extends Component {
 
     }
     componentWillMount() {
+      this.histType = this.props.type;
       //this.phStream= new PHStream();
         this.initData();
       // this.start();

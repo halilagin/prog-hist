@@ -22,12 +22,12 @@ class App extends Component {
                 <div style={{position:'relative', float:"left",  width:"400px"}}>
                   {/*<ExperimentIntroduction></ExperimentIntroduction>*/}
                   {/*<ProgHistClassicStreaming style={{position:'relative'}} name="dummyname" mountClass="ProgHistClassicStreaming"></ProgHistClassicStreaming>*/}
-                  {/*<ProgHistAnnotatedBins ref={(progHist) => { this.progHist = progHist; }} type="AnnotatedHistogram" style={{position:'relative'}} name="dummyname" mountClass="ProgHistClassicStreaming"></ProgHistAnnotatedBins>*/}
-                  <ProgHistAnnotatedBins ref={(progHist) => { this.progHist = progHist; }} type="ClassicHistogram" style={{position:'relative'}} name="dummyname" mountClass="ProgHistClassicStreaming"></ProgHistAnnotatedBins>
+                  {/*type="ClassicHistogram" || "AnnotatedHistogram" <ProgHistAnnotatedBins ref={(progHist) => { this.progHist = progHist; }} type="AnnotatedHistogram" style={{position:'relative'}} name="dummyname" mountClass="ProgHistClassicStreaming"></ProgHistAnnotatedBins>*/}
+                  <ProgHistAnnotatedBins ref={(progHist) => { this.progHist = progHist; }} type="AnnotatedHistogram" style={{position:'relative'}} name="dummyname" mountClass="ProgHistClassicStreaming"></ProgHistAnnotatedBins>
 
                   {/*<LineWrapper name="wrapper"/>*/}
                 </div>
-                <div>
+                <div style={{display:"none"}}>
                   <button key="parentClick"  onClick={this.parentButtonClicked.bind(this)} >parentClick</button>
                 </div>
 

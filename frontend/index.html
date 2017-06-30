@@ -19,6 +19,7 @@
 
 
     .ProgHistMainContainer{
+      margin-top:20px;
 
     }
 
@@ -27,10 +28,11 @@
     }
     .ph_bincount{
       width:40px;
-      height: 60px;
+      height: 70px;
       text-align: center;
-      font-size: 24px;
+      font-size: 30px;
       font-weight: bold;
+      color:red;
 
     }
     .ph_buttons{
@@ -104,6 +106,81 @@
 
     }
 
+
+    .buttonsContainer{
+      height: 100px;
+      width:820px;
+      border-radius: 10px;
+    }
+
+    .distButton {
+      width: 50px;
+      height: 50px;
+      font-size: 24px;
+
+    }
+    .distButtonContainer{
+      float:left;
+      height: 90px;
+      width:500px;
+      border-radius: 10px;
+      margin: 5px;
+
+    }
+
+    .distButtonTopTitle{
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .distButtonLabel{
+      float: left;
+      margin: 5px;
+      text-align: center;
+      position: relative;
+      top: 50%;
+      transform: translateY(-50%);
+      -webkit-transform: translateY(-50%);
+
+    }
+
+    .startStopButtonContainer{
+      float: left;
+      margin: 5px;
+      height:90px;
+      width:120px;
+      border-radius: 10px;
+    }
+
+    .startStopButton{
+      height:60px;
+      width:90px;
+      font-size:32px;
+      margin-left:15px;
+      margin-top:15px;
+    }
+
+    .counterContainer{
+      float: left;
+      margin: 5px;
+      height:90px;
+      width:120px;
+      border-radius: 10px;
+    }
+
+    .updownarrow{
+      color:#337ab7;
+      font-size:24px;
+    }
+
+    .counterInsideAlign{
+      margin-left:30px;
+      margin-top:15px;
+    }
+
   </style>
   <style type="text/css">
     #lineChart svg {
@@ -116,29 +193,204 @@
 <body>
 <div class="reveal" id="experimentIntroduction">
   <div class="slides">
-    <section>
+    <section >
       <div >
         <div>
           <p style="font-size: 66px;font-weight: bold;">Welcome to my experiment!</p>
-          <p style="font-size:44px;">For further instructions, please click the button <img src="/public/images/right-arrow.png"></img> on bottom-right, press "space" in the keyboard.</p>
+          <p style="font-size:44px;">For further instructions, please click the button <img src="/public/images/right-arrow.png"></img> on bottom-right or press "<b>space</b>" in the keyboard.</p>
           </div>
 
       </div>
     </section>
     <section>
       <div>
-        <p>The experiment will last in 5 minutes.</p>
-        <p>First, you will see some explanations in slides. In last slide, you will see a <button>Start</button> button. When you click on the button. The experiment will start.</p>
+        <ul>
+          <li>Let's begin.</li>
+          <li class="fragment">The experiment will last in 5 minutes.</li>
+          <li class="fragment">First, you will see some explanations in slides. In last slide, you will see a <button>Start Experiment</button> button. When you click on the button. The experiment will start.</li>
+        </ul>
+
+        <p></p>
+        <p></p>
       </div>
     </section>
     <section>
       <div>
-        <p>You will see an histogram.</p>
-        <p>First, you will see some explanations in slides. In last slide, you will see a <button>Start</button> button. When you click on the button. The experiment will start.</p>
+        <ul>
+          <li>This experiment is about histograms.</li>
+          <li>First, let's remind you what the histogram is.</li>
+        </ul>
+        </div>
+    </section>
+    <section>
+      <div>
+        <div style="float:left;font-size:32px;">
+          <ul>
+            <li>A histogram is a visualization method summarizing frequencies of data. Each bin in histogram indicates the frequency of a particular data group.</li>
+            <li>In the histogram below each bin indicates a group for <span style="color:red;font-weight:bold;">red</span> data points that are close to each other. Height of each bin shows the number of data point that are inside.</li>
+          </ul>
+        </div>
+        <div ><img width="300" height="300" src="/public/images/exp-intro/bins-with-points.png"></img></div>
       </div>
     </section>
 
-    <section><button onclick="startExperiment()">Click to Start</button></section>
+    <section>
+      <div>
+        <div >
+          <ul>
+            <li>We introduce 3 new visualizations below for changes in histogram bins.</li>
+          </ul>
+        </div>
+        <div >
+          <div style="float:right;font-size:16px;">
+            <img width="280" height="280" src="/public/images/exp-intro/ph-merge.png"></img>
+            <div>Merging of two bins.</div>
+          </div>
+          <div style="float:right;font-size:16px;">
+            <img width="280" height="280" src="/public/images/exp-intro/ph-far.png"></img>
+            <div>Two bins getting far away.</div>
+          </div>
+          <div style="float:right;font-size:16px;">
+            <img width="280" height="280" src="/public/images/exp-intro/ph-split.png"></img>
+            <div>The bin splits into two.</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <section>
+
+      <div>
+        <div >
+          <ul>
+            <li>The image below indicates that two accompanying bins start merging since they receive data points very close to each other. </li>
+          </ul>
+        </div>
+        <div >
+          <div style="font-size:16px;">
+            <img width="280" height="280" src="/public/images/exp-intro/merging-with-points.png"></img>
+            <div>Merging of two bins.</div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <section>
+
+      <div>
+        <div >
+          <ul>
+            <li>The image below indicates that two accompanying bins start becoming far away since they receive data points very far from each other. </li>
+          </ul>
+        </div>
+        <div >
+          <div style="font-size:16px;">
+            <img width="280" height="280" src="/public/images/exp-intro/twobins-gettingfar.png"></img>
+            <div>Two bins getting far away.</div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <section>
+
+      <div>
+        <div >
+          <ul>
+            <li>The image below indicates that bin start splitting into two since it receives data points very far from inside. </li>
+          </ul>
+        </div>
+        <div >
+          <div style="font-size:16px;">
+            <img width="280" height="280" src="/public/images/exp-intro/bin-splitting.png"></img>
+            <div>The bin start splitting into two.</div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <section>
+
+      <div>
+        <div >
+          <ul>
+            <li>In this experiment we will show you a histogram whose number of bins changes regularly and we will ask you guess the number of humps in data. For example, how many humps does the histogram below represent? <b>2</b> or <b>3</b>? </li>
+          </ul>
+        </div>
+        <div >
+          <div style="float:left;font-size:16px;">
+            <img width="280" height="280" src="/public/images/exp-intro/2gaussians.png"></img>
+            <div>Data represent two humps.</div>
+          </div>
+          <div style="float:left;font-size:16px;">
+            <img width="280" height="280" src="/public/images/exp-intro/3gaussians.png"></img>
+            <div>Data represent three humps.</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section>
+
+      <div>
+        <div >
+          <ul>
+            <li>The same data is represented with new histogram visualizaiton below. Same question: how many humps does the histogram below represent? <b>2</b> or <b>3</b>? </li>
+          </ul>
+        </div>
+        <div >
+          <div style="float:left;font-size:16px;">
+            <img width="280" height="280" src="/public/images/exp-intro/2gaussians.png"></img>
+            <div>Data represent two humps.</div>
+          </div>
+          <div style="float:left;font-size:16px;">
+            <img width="280" height="280" src="/public/images/exp-intro/3gaussians.png"></img>
+            <div>Data represent three humps.</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section>
+
+      <div>
+        <div style="font-size:16px;">
+          <ul>
+            <li>To be able to find the answer you will manipulate the screen below after you click the <button>Start Experiment</button> button at the end  of the slides. </li>
+            <li class="fragment">In the screen below, you can start experiment by clicking the button <button class="btn btn-primary">Start</button>. The histogram will be refreshed in each <span style="font-weight:bold;color:red;">3</span> seconds.</li>
+            <li class="fragment">If you think that the number of bins are not enough to represent the data, you can increase or decrease the number by clicking icons <img width="20px" height="20px" src="/public/images/exp-intro/icon-up.png" /> or <img width="20px" height="20px" src="/public/images/exp-intro/icon-down.png" />.  </li>
+            <li class="fragment">When you are confident enough stop the histogram visualization by clicking the button <button class="btn btn-primary">Stop</button> (<button class="btn btn-primary">Start</button> will convert to <button class="btn btn-primary">Stop</button> after system starts.) </li>
+            <li class="fragment">Finally, choose one of the numbers indicating the number of humps from <button class="btn btn-primary">0</button > to <button class="btn btn-primary">7</button>, for example <button class="btn btn-primary">2</button>. </li>
+
+          </ul>
+        </div>
+        <div >
+          <div style="font-size:16px;">
+            <img width="300" height="300" src="/public/images/exp-intro/the-experiment-screen.png"></img>
+            <div>The experiment environment.</div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+
+
+
+    <section><button onclick="startExperiment()">Start Experiment</button></section>
   </div>
 </div>
 <div></div>

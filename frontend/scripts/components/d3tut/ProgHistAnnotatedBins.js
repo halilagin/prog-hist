@@ -96,35 +96,43 @@ export class ProgHistAnnotatedBins extends Component {
                 <div className="ph_clear"> </div>
 
                 <div className="interval_cntr" style={{display:"none"}}>Interval <input ref="txtInterval" defaultValue={this.state.interval} />ms <button key="start"   onClick={this.startTimer.bind(this)} >Start</button></div>
-                <div className="ph_buttons">
+                <div>
                   {/*<div className="ph_buttonitem"> <button key="start"   onClick={this.stopTimer.bind(this)} >Stop</button></div>*/}
                   {/*<div className="ph_buttonitem"> <button key="generateData"   onClick={this.generateData.bind(this)} >generateData</button></div>*/}
                   {/*<div className="ph_buttonitem"><button key="refresh"  onClick={this.refresh.bind(this)} >Refresh</button></div>*/}
 
-                  <div>
-                    <div className="ph_buttonitem"> <button key="start"   onClick={this.toggleStopStart.bind(this)} >{this.getStopStartButtonText()}</button></div>
+                  <div className="buttonsContainer">
 
-                    <div className="ph_bincountdiv">
-                      <div >
-                        <div className="ph_bincount_txt_cntr" >
-                          <input ref="txtBinsCount" defaultValue={this.state.binsCount} className="ph_bincount" />
+                    <div className="startStopButtonContainer bg-warning"> <span key="start"  className="btn btn-large btn-primary startStopButton"  onClick={this.toggleStopStart.bind(this)} >{this.getStopStartButtonText()}</span></div>
+
+                    <div className="counterContainer bg-warning">
+                      <div className="counterInsideAlign">
+                        <div >
+                          <div className="ph_bincount_txt_cntr" >
+                            <input ref="txtBinsCount" defaultValue={this.state.binsCount} className="ph_bincount"  />
+                          </div>
+                        </div>
+                        <div className="ph_bincount_updown_cntr">
+                          <div><span className="glyphicon glyphicon-chevron-up updownarrow"  onClick={this.increaseBinCount.bind(this)}></span></div>
+                          <div style={{color:"red"}}>bins</div>
+                          <div><span className="glyphicon glyphicon-chevron-down updownarrow" onClick={this.decreaseBinCount.bind(this)}></span></div>
                         </div>
                       </div>
-                      <div className="ph_bincount_updown_cntr">
-                        <div><span className="glyphicon glyphicon-chevron-up"  onClick={this.increaseBinCount.bind(this)}></span></div>
-                        <div>bins</div>
-                        <div><span className="glyphicon glyphicon-chevron-down" onClick={this.decreaseBinCount.bind(this)}></span></div>
-                      </div>
                     </div>
-                    <div>
-                      <div style={{float:"left", margin:"5px"}} className="btn btn-primary"><span>0</span></div>
-                      <div style={{float:"left", margin:"5px"}} className="btn btn-primary"><span>1</span></div>
-                      <div style={{float:"left", margin:"5px"}} className="btn btn-primary"><span>2</span></div>
-                      <div style={{float:"left", margin:"5px"}} className="btn btn-primary"><span>3</span></div>
-                      <div style={{float:"left", margin:"5px"}} className="btn btn-primary"><span>4</span></div>
-                      <div style={{float:"left", margin:"5px"}} className="btn btn-primary"><span>5</span></div>
-                      <div style={{float:"left", margin:"5px"}} className="btn btn-primary"><span>6</span></div>
-                      <div style={{float:"left", margin:"5px"}} className="btn btn-primary"><span>7</span></div>
+
+                    <div className="distButtonContainer bg-warning">
+
+                        <div className="distButtonTopTitle">Number of Humps</div>
+                        <div>
+                          <div style={{float:"left", margin:"5px"}}><button  className="btn btn-large btn-primary distButton" onClick={() => this.setGuessOfGaussCount(0)}>0</button></div>
+                          <div style={{float:"left", margin:"5px"}}><button  className="btn btn-large btn-primary distButton" onClick={() => this.setGuessOfGaussCount(1)}>1</button></div>
+                          <div style={{float:"left", margin:"5px"}}><button  className="btn btn-large btn-primary distButton" onClick={() => this.setGuessOfGaussCount(2)}>2</button></div>
+                          <div style={{float:"left", margin:"5px"}}><button  className="btn btn-large btn-primary distButton" onClick={() => this.setGuessOfGaussCount(3)}>3</button></div>
+                          <div style={{float:"left", margin:"5px"}}><button  className="btn btn-large btn-primary distButton" onClick={() => this.setGuessOfGaussCount(4)}>4</button></div>
+                          <div style={{float:"left", margin:"5px"}}><button  className="btn btn-large btn-primary distButton" onClick={() => this.setGuessOfGaussCount(5)}>5</button></div>
+                          <div style={{float:"left", margin:"5px"}}><button  className="btn btn-large btn-primary distButton" onClick={() => this.setGuessOfGaussCount(6)}>6</button></div>
+                          <div style={{float:"left", margin:"5px"}}><button  className="btn btn-large btn-primary distButton" onClick={() => this.setGuessOfGaussCount(7)}>7</button></div>
+                        </div>
 
                     </div>
                   </div>
@@ -187,14 +195,20 @@ export class ProgHistAnnotatedBins extends Component {
     }
 
 
-  setGuessOfGaussCount(){
-    this.userData.binCountGuess = this.refs.txtBinCountGuess.value;
+  setGuessOfGaussCount(binCount){
+    if (binCount==undefined)
+      this.userData.binCountGuess = this.refs.txtBinCountGuess.value;
+    else
+      this.userData.binCountGuess = binCount;
+    var confirm_ = confirm("Your guess is " + this.userData.binCountGuess + ". If it is allright, please press OK.");
+    if (!confirm_)
+      return;
 
     let url = "http://localhost:5000/proghist/streaming/saveuserdata";
 
     axios.post(url, this.userData)
       .then((resp) => {
-        alert("user data submitted. thanks!");
+        alert("Experiment is finished. Thanks!");
       })
       .catch(function (error) {
         console.log(error);
@@ -209,6 +223,7 @@ export class ProgHistAnnotatedBins extends Component {
     this.state.binsCount +=1;
     this.userData.clicks.push({time:new Date().getTime() - this.userData.startTime, upDown:'up', binCount:this.state.binsCount});
     this.refs.txtBinsCount.value = this.state.binsCount;
+    this.state.stopStart = true;
     this.setState(this.state);
     this.start();
 
@@ -223,6 +238,7 @@ export class ProgHistAnnotatedBins extends Component {
     this.state.binsCount -=1;
     this.userData.clicks.push({time:new Date().getTime() - this.userData.startTime, upDown:'down',binCount:this.state.binsCount});
     this.refs.txtBinsCount.value = this.state.binsCount;
+    this.state.stopStart = true;
     this.setState(this.state);
     this.start();
   }
@@ -832,7 +848,7 @@ export class ProgHistAnnotatedBins extends Component {
         this.state = null;
         this.state = {
             stopStart:false, //false:stop, true:start
-            visible:false,
+            visible:true,
             streamingDataIdx: 0,
             interval: 3000,
             binsCount:10,

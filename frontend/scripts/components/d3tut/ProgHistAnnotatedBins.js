@@ -17,8 +17,9 @@ export class ProgHistAnnotatedBins extends Component {
 
   visible=true;
   streamedDataContext=null;
-  userData = {clicks:[], binCountGuess:0, cost:0, startTime:-1};
+  userData = {clicks:[], binCountGuess:0, cost:0, startTime:-1, distCount:0, histType:""};
   histType=null;
+  distCount=0;
   // changes array has 3 elements. first indicates changes between 2 bins,
   // second indicates change in first bin and the last shows changes in second bin.
   // example
@@ -200,6 +201,8 @@ export class ProgHistAnnotatedBins extends Component {
       this.userData.binCountGuess = this.refs.txtBinCountGuess.value;
     else
       this.userData.binCountGuess = binCount;
+    this.userData.distCount = this.distCount;
+    this.userData.histType = this.histType;
     var confirm_ = confirm("Your guess is " + this.userData.binCountGuess + ". If it is allright, please press OK.");
     if (!confirm_)
       return;
@@ -851,7 +854,7 @@ export class ProgHistAnnotatedBins extends Component {
             visible:true,
             streamingDataIdx: 0,
             interval: 3000,
-            binsCount:10,
+            binsCount:2,
             ages:[],
             width:400,
             height:400,
@@ -869,6 +872,7 @@ export class ProgHistAnnotatedBins extends Component {
     }
     componentWillMount() {
       this.histType = this.props.type;
+      this.distCount = parseInt(this.props.distCount);
       //this.phStream= new PHStream();
         this.initData();
       // this.start();

@@ -20,6 +20,7 @@
 
     .ProgHistMainContainer{
       margin-top:20px;
+      width:800px;
 
     }
 
@@ -29,6 +30,16 @@
     .ph_bincount{
       width:40px;
       height: 70px;
+      text-align: center;
+      font-size: 30px;
+      font-weight: bold;
+      color:red;
+
+    }
+
+    .ph_binBudget{
+      width:60px;
+      height: 50px;
       text-align: center;
       font-size: 30px;
       font-weight: bold;
@@ -109,7 +120,7 @@
 
     .buttonsContainer{
       height: 100px;
-      width:820px;
+      width:1020px;
       border-radius: 10px;
     }
 
@@ -171,6 +182,14 @@
       border-radius: 10px;
     }
 
+    .binBudgetContainer{
+      float: left;
+      margin: 5px;
+      height:90px;
+      width:120px;
+      border-radius: 10px;
+    }
+
     .updownarrow{
       color:#337ab7;
       font-size:24px;
@@ -179,6 +198,27 @@
     .counterInsideAlign{
       margin-left:30px;
       margin-top:15px;
+    }
+
+    .binBudgetInsideAlign{
+      margin-left:30px;
+      margin-top:15px;
+    }
+
+
+
+
+    /*
+      fill area component's style
+     */
+    .fillarea_area {
+      fill: lightsteelblue;
+      stroke-width: 0;
+    }
+    .fillarea_line {
+      fill: none;
+      stroke: steelblue;
+      stroke-width: 2px;
     }
 
   </style>
@@ -191,6 +231,8 @@
 </head>
 
 <body>
+<!-- -->
+<!--
 <div class="reveal" id="experimentIntroduction">
   <div class="slides">
     <section >
@@ -393,6 +435,8 @@
     <section><button onclick="startExperiment()">Start Experiment</button></section>
   </div>
 </div>
+-->
+<!-- -->
 <div></div>
 <div class="container">
   <div class="h1bgraph"></div>
@@ -414,9 +458,9 @@
 <script src="/dist/bundle.js"></script>
 <script src="/public/jquery321.js"></script>
 <script src="/public/bootstrap337/js/bootstrap.js"></script>
-<script src="./node_modules/reveal.js/js/reveal.js"></script>
+<!--<script src="./node_modules/reveal.js/js/reveal.js"></script>-->
 <script>
-  Reveal.initialize();
+//  Reveal.initialize();
 
   function startExperiment(){
      $("#experimentIntroduction").remove();

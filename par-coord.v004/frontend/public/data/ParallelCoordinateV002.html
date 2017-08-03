@@ -1,0 +1,546 @@
+
+<!--
+
+see: https://bl.ocks.org/jasondavies/1341281
+see: http://bl.ocks.org/timelyportfolio/5c136de85de1c2abb6fc
+see: http://bl.ocks.org/chrisbrich/4173587
+-->
+
+
+
+<!DOCTYPE html>
+<head>
+<meta charset="utf-8">
+<style>
+
+
+  /*.background{*/
+    /*visibility: visible !important;*/
+    /*fill:#dedede;*/
+  /*}*/
+
+
+  /*.extent{*/
+    /*visibility: visible !important;*/
+    /*fill:#000;*/
+  /*}*/
+
+
+  /*.resize rect{*/
+    /*visibility: visible !important;*/
+    /*fill:#00ab00;*/
+  /*}*/
+
+  svg {
+    font: 10px sans-serif;
+  }
+
+  .background path {
+    fill: none;
+    stroke: #ddd;
+    shape-rendering: crispEdges;
+  }
+
+  .foreground path {
+    fill: none;
+    stroke: steelblue;
+  }
+
+  .brush .extent {
+    fill-opacity: .3;
+    stroke: #fff;
+    shape-rendering: crispEdges;
+  }
+
+  .axis line,
+  .axis path {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+  }
+
+  .axis text {
+    text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
+    cursor: move;
+  }
+
+</style>
+<script
+  src="https://code.jquery.com/jquery-3.2.1.min.js"
+  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+  crossorigin="anonymous"></script>
+</head>
+<body>
+
+<div>
+  <button id="sepal_w_brush_btn">show brush</button>
+
+</div>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script>
+
+  var margin = {top: 30, right: 10, bottom: 10, left: 10};
+  var width = 960 - margin.left - margin.right;
+  var height = 500 - margin.top - margin.bottom;
+  var underHeightLength=200;
+  var x = d3.scale.ordinal().rangePoints([0, width], 1);
+  var y = {};
+
+
+  var dragging = {};
+
+  var line = d3.svg.line(),
+    axis = d3.svg.axis().orient("left"),
+    background,
+    foreground;
+
+  var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom+underHeightLength)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+
+
+  /*
+    estcorrbrush:start
+   */
+  var dimscales={};
+  var corrBrushes={};
+  var estcorrbrush_panels;
+  var estbrushInstance;
+  var pc_petal_len_scale = d3.scale.linear().domain([1, 7.7]).range([-0.99, 0.99]);
+  var pc_petal_len_scale_r = d3.scale.linear().domain([-0.99, 0.99]).range([1, 7.5]);
+
+  var pc_petal_w_scale = d3.scale.linear().domain([0, 2.6]).range([-0.99, 0.99]);
+  var pc_petal_w_scale_r = d3.scale.linear().domain([-0.99, 0.99]).range([0, 2.6]);
+
+  var estcorr_xscale = d3.scale.linear().domain([-0.99, 0.99]).range([0, 70]);
+  var estcorr_yscale = d3.scale.linear().domain([-0.99, 0.99]).range([70, 0]);
+  var estcorr_rscale = d3.scale.linear().domain([0, 1]).range([0, 35]);
+  var estcorr_line = d3.svg.line()
+    .x(function(d) { return estcorr_xscale(d.x); })
+    .y(function(d) { return estcorr_yscale(d.y); });
+
+  /*
+   estcorrbrush:end
+   */
+
+  /*
+    sigma slider brushes
+   */
+
+  var sigmaSlider_xScale = d3.scale.linear().domain([0,3]).range([0,70]);
+  var sigmaSlider_rxScale = d3.scale.linear().domain([0,70]).range([0,3]);
+
+  var sigmaSlider_axis = d3.svg.axis().scale(sigmaSlider_xScale);
+
+  function position(d) {
+    var v = dragging[d];
+    return v == null ? x(d) : v;
+  }
+
+  function transition(g) {
+    return g.transition().duration(500);
+  }
+
+  // Returns the path for a given data point.
+  function path(d) {
+    return line(dimensions.map(function(p) { return [position(p), y[p](d[p])]; }));
+  }
+
+
+  function brushstart() {
+    if (d3.event.sourceEvent===undefined ||  d3.event.sourceEvent===null)
+      return;
+    if (d3.event.sourceEvent.stopPropagation===undefined || d3.event.sourceEvent.stopPropagation===null)
+      return;
+    d3.event.sourceEvent.stopPropagation();
+  }
+
+  // Handles a brush event, toggling the display of foreground lines.
+  function brush() {
+    var actives = dimensions.filter(function(p) { return !y[p].brush.empty(); }),
+      extents = actives.map(function(p) { return y[p].brush.extent(); });
+    foreground.style("display", function(d) {
+      return actives.every(function(p, i) {
+        return extents[i][0] <= d[p] && d[p] <= extents[i][1];
+      }) ? null : "none";
+    });
+  }
+
+
+
+
+  function estcorr_brushstart() {
+    if (d3.event.sourceEvent===undefined || d3.event.sourceEvent===null)
+      return;
+    if (d3.event.sourceEvent.stopPropagation===undefined || d3.event.sourceEvent.stopPropagation===null)
+      return;
+
+    d3.event.sourceEvent.stopPropagation();
+  }
+
+  function estcorr_brushed() {
+      var clazz = $(this).attr("class");
+      var key_ = clazz.substring("estcorrbrush_slider_".length);
+      var localDims = key_.split("___");
+
+      console.log("key_", key_);
+      //estcorr_remote_data.eigens[key_]
+    var ex = corrBrushes[key_]["corrbrush"].extent();
+    ex = (ex[0]+ex[1]) / 2.0;
+    corrBrushes[key_]["corrbrush_panel"]
+      .selectAll(".estcorrvertpath")
+      //.data([{"x":ex,"y":0}, {"x":ex,"y":0.5}])
+      //.append("path")
+      .attr("class", "estcorrvertpath")
+      .attr("stroke", "blue")
+      .attr("stroke-width", 0.5)
+      .attr("fill", "none")
+      .attr("d", estcorr_path([{"x":ex,"y":-1}, {"x":ex,"y":1}]))
+    ;
+
+//    //find mean and var of second correlated variable
+//    //kevin murphy page 111.
+//
+
+
+
+    var m1 = dimscales[key_].xscale(estcorr_remote_data.eigens[key_].m1);
+    var m2 = dimscales[key_].yscale(estcorr_remote_data.eigens[key_].m2);
+    var cov = estcorr_remote_data.eigens[key_].cov;
+    var invcov = estcorr_remote_data.eigens[key_].invcov;
+
+    var newm1 = ex;
+    var newm2 = m2+cov[0][1]*(1./cov[0][0])*(newm1-m1);
+    var newm2_origscale = dimscales[key_].ryscale(newm2);
+    var variance = cov[1][1] -  cov[0][1]*(1./cov[0][0])*cov[1][0];
+
+    //console.log("newm2, orig_scale_newm2", newm2, dimscales[key_].ryscale(newm2));
+
+    var sigma_ = Math.sqrt(variance);
+    console.log("brush.m1.value", newm1, dimscales[key_].rxscale(newm1));
+    console.log("m2,newm2", estcorr_remote_data.eigens[key_].m2,newm2_origscale);
+    console.log("variance,newvariance,newsigma", cov[1][1],variance, sigma_);
+    applyCorrbrush(key_,localDims[0], localDims[1],newm2_origscale, sigma_);
+  }
+
+
+  function applyCorrbrush(key_,dim1,dim2, brush_mean, sigma) {
+    //sigma, 2*sigma=95%
+    var dim = dim2;
+    var ex_r = brush_mean;
+    var sigmaFactor = +corrBrushes[key_]["corrbrush_sigmabrushed"];
+    console.log("applyCorrbrush_sigmaFactor",sigmaFactor);
+
+    var ex_ = [ex_r-sigmaFactor*sigma, ex_r+sigmaFactor*sigma];
+    console.log("applyCorrbrush_ex",ex_);
+    y[dim].brush.extent(ex_);
+    console.log("applyCorrbrush.dim", dim2);
+    y[dim].brush(d3.select(".dimension_"+dim).select(".brush").transition());
+    y[dim].brush.event(d3.select(".dimension_"+dim).select(".brush").transition().delay(1000));
+  }
+
+
+
+  // Returns the path for a given data point.
+  function estcorr_path(d) {
+
+    //var dims_ = [estcorr_xscale(d[0]) , estcorr_yscale(d[1])];
+    //let line_ =  estcorr_line(dims_);
+
+    line_ =  estcorr_line(d);
+    return line_;
+  }
+
+
+
+  function sigmaSlider_brushed(){
+
+    var clazz = $(this).attr("class");
+    var key_ = clazz.substring("estcorrbrush_sigmaslider_".length);
+    var localDims = key_.split("___");
+
+    //estcorr_remote_data.eigens[key_]
+    var ex = corrBrushes[key_]["corrbrush_sigmabrush"].extent()
+    corrBrushes[key_]["corrbrush_sigmabrushed"] = (ex[0]+ex[1])/2.0;
+    console.log("key_,value", key_,corrBrushes[key_]["corrbrush_sigmabrushed"]);
+
+//    var selected =  sigmaSlider_xScale.domain().filter(function(d){
+//    return (corrBrushes[key_]["corrbrush_sigmabrush"].extent()[0] <= sigmaSlider_xScale(d)) && (sigmaSlider_xScale(d) <= corrBrushes[key_]["corrbrush_sigmabrush"].extent()[1]);
+//    });
+    //console.log("corrbrush_sigmabrushed", corrBrushes[key_]["corrbrush_sigmabrushed"]);
+  }
+
+
+  function start(data_){
+    estcorr_remote_data = data_;
+    var data = data_.csv;
+    var eigens = data_.eigens;
+
+    // Extract the list of dimensions and create a scale for each.
+    x.domain(dimensions = d3.keys(data[0]).filter(function(d) {
+      return d != "name" && (y[d] = d3.scale.linear()
+          .domain(d3.extent(data, function(p) { return +p[d]; }))
+          .range([height, 0]));
+    }));
+
+    for (var i=0;i<dimensions.length;i++){
+      if (! ( (i+1)<dimensions.length))
+        break;
+        var d = dimensions[i];
+        var key_ = dimensions[i]+"___"+dimensions[i+1];
+        var x_extent = eigens[key_].extents[0];
+        var y_extent = eigens[key_].extents[1];
+      dimscales[key_] = {
+          "xscale":d3.scale.linear().domain(x_extent).range([-0.999, 0.999]),
+          "rxscale":d3.scale.linear().domain([-0.999, 0.999]).range(x_extent),
+          "yscale":d3.scale.linear().domain(y_extent).range([-0.999, 0.999]),
+          "ryscale":d3.scale.linear().domain([-0.999, 0.999]).range(y_extent),
+
+      };
+    }
+
+
+
+    // Add grey background lines for context.
+    background = svg.append("g")
+      .attr("class", "background")
+      .selectAll("path")
+      .data(data)
+      .enter().append("path")
+      .attr("d", path);
+
+    // Add blue foreground lines for focus.
+    foreground = svg.append("g")
+      .attr("class", "foreground")
+      .selectAll("path")
+      .data(data)
+      .enter().append("path")
+      .attr("d", path);
+
+    // Add a group element for each dimension.
+    var g = svg.selectAll(".dimension")
+      .data(dimensions)
+      .enter().append("g")
+      .attr("class", (d)=>"dimension dimension_"+d)
+      .attr("transform", function(d) { return "translate(" + x(d) + ")"; })
+     ;
+
+    // Add an axis and title.
+    g.append("g")
+      .attr("class", (d)=>"axis axis_"+d)
+      .each(function(d) { d3.select(this).call(axis.scale(y[d])); })
+      .append("text")
+      .style("text-anchor", "middle")
+      .attr("y", -9)
+      .text(function(d) { return d; });
+
+    // Add and store a brush for each axis.
+    g.append("g")
+      .attr("class", "brush")
+      .each(function(d) {
+        d3.select(this).call(y[d].brush = d3.svg.brush().y(y[d]).on("brushstart", brushstart).on("brush", brush));
+
+      })
+      .selectAll("rect")
+      .attr("x", -8)
+      .attr("width", 16);
+
+
+    // Add estcorrbrush
+
+    for (var i=0;i<dimensions.length;i++){
+      if (! ( (i+1)<dimensions.length))
+        break;
+
+      var d = dimensions[i];
+      var key_ = dimensions[i]+"___"+dimensions[i+1];
+      corrBrushes[key_]={};
+      corrBrushes[key_]["corrbrush_panel"] = svg.selectAll(".estcorrbrush_panel_"+key_)
+        .data([0]).enter().append("g")
+        .attr("class", "estcorrbrush_panel_"+key_)
+        .attr("transform", function(){return "translate(" + [(x(dimensions[i])+50),height+10] + ")"; })
+        ;
+
+      corrBrushes[key_]["corrbrush_panel"].append("rect")
+        .attr("y", 0)
+        .attr("width", 70)
+        .attr("height", 70)
+        .attr("fill", "#eeeeee");
+
+
+      corrBrushes[key_]["corrbrush_sigma_panel"] = svg.selectAll(".estcorrbrush_sigmapanel_"+key_)
+        .data([0]).enter().append("g")
+        .attr("class", "estcorrbrush_sigmapanel_"+key_)
+        .attr("transform", function(){return "translate(" + [(x(dimensions[i])+50),height+90] + ")"; })
+      ;
+      corrBrushes[key_]["corrbrush_sigma_panel"].append("rect")
+        .attr("y", 0)
+        .attr("width", 70)
+        .attr("height", 10)
+        .attr("fill", "yellow");
+
+
+    }
+
+    for (var i=0;i<dimensions.length;i++){
+      if (! ( (i+1)<dimensions.length))
+        break;
+      var d = dimensions[i];
+      var key_ = dimensions[i]+"___"+dimensions[i+1];
+      corrBrushes[key_]["corrbrush"] = d3.svg.brush().x(estcorr_xscale);
+      corrBrushes[key_]["corrbrush"].on("brushstart", estcorr_brushstart).on("brush", estcorr_brushed);
+
+      //corrbrush slider
+      var slider = corrBrushes[key_]["corrbrush_panel"].append("g")
+          .attr("class", "estcorrbrush_slider_"+key_)
+        .attr("transform", "translate("+ [0,65]+")")
+        ;
+      corrBrushes[key_]["corrbrush"].extent([-0.1,0.1]);
+      corrBrushes[key_]["corrbrush"](slider);
+      //slider.selectAll("rect.background").attr("height", 300);
+      slider.selectAll("rect.extent").attr("height", 10);
+      slider.selectAll("rect.extent").attr("width", 10 );
+      slider.selectAll(".resize rect").attr("height", 0);
+
+
+
+      //sigma slider
+      corrBrushes[key_]["corrbrush_sigmabrush"] =   d3.svg.brush().x(sigmaSlider_xScale);
+      corrBrushes[key_]["corrbrush_sigmabrush"].on("brushstart", brushstart).on("brush",sigmaSlider_brushed);
+
+      var sigmaSlider = corrBrushes[key_]["corrbrush_sigma_panel"].append("g")
+          .attr("class", "estcorrbrush_sigmaslider_"+key_)
+        .attr("transform", "translate("+ [0,0]+")")
+      ;
+
+
+      corrBrushes[key_]["corrbrush_sigma_panel"]
+        .append("g")
+        .attr("class", "axis")
+        .call(sigmaSlider_axis)
+      ;
+
+      corrBrushes[key_]["corrbrush_sigmabrush"].extent([0,0.3]);
+      corrBrushes[key_]["corrbrush_sigmabrush"](sigmaSlider);
+      //slider.selectAll("rect.background").attr("height", 300);
+      sigmaSlider.selectAll("rect.extent").attr("height", 10);
+      sigmaSlider.selectAll("rect.extent").attr("width", 10 );
+      sigmaSlider.selectAll(".resize rect").attr("height", 0);
+
+
+      corrBrushes[key_]["corrbrush_panel"]
+      //.selectAll(".estcorrvertpath")
+      //.data([{"x":ex,"y":0}, {"x":ex,"y":0.5}])
+        .append("path")
+        .attr("class", "estcorrvertpath")
+        .attr("stroke", "blue")
+        .attr("stroke-width", 0.5)
+        .attr("fill", "none")
+        .attr("d", estcorr_path([{"x":0,"y":-1}, {"x":0,"y":1}]))
+      ;
+    }
+
+
+
+    for (var i=0;i<dimensions.length;i++) {
+        if (! ( (i+1)<dimensions.length))
+            break;
+      var d = dimensions[i];
+      var key_ = dimensions[i]+"___"+dimensions[i+1];
+      corrBrushes[key_]["corrbrush_panel"].selectAll(".estcorrbrush_ellipse_"+d)
+        .data([0]).enter()
+        .append("ellipse")
+        .attr("class", "estcorrbrush_ellipse_"+d)
+        .attr("cx", estcorr_xscale(0))
+        .attr("cy", estcorr_yscale(0))
+        .attr("rx", estcorr_rscale(eigens[key_].eigvals[0]/2))
+        .attr("ry", estcorr_rscale(eigens[key_].eigvals[1]/2))
+        .attr("fill", "none")
+        .attr("stroke", "#000")
+        .attr("transform", (d, i) => {
+          return "rotate(" + (-1 * 1 * eigens[key_].angle) + "," + estcorr_xscale(0) + "," + estcorr_yscale(0) + ")"
+        });
+    }
+
+
+//    var estcorrbrush_brushGs =   estcorrbrush_panels.append("g")
+//      .attr("class", "estcorrbrush");
+
+
+
+//
+//
+//    estcorrbrush_panels.each(function(d){
+////      y[d].corrbrush = d3.svg.brush().x(estcorr_xscale);
+////      y[d].corrbrush.on("brushstart", estcorr_brushstart).on("brush", (d)=>{return estcorr_brushed(d);});
+////
+////      var slider = d3.select(this).append("g")
+////        .attr("transform", "translate("+ [0,70-5]+")");
+////      y[d].corrbrush.extent([0.,0.3]);
+////      y[d].corrbrush(slider);
+////      //slider.selectAll("rect.background").attr("height", 300);
+////      slider.selectAll("rect.extent").attr("height", 10);
+////      slider.selectAll("rect.extent").attr("width", 10 );
+////      slider.selectAll(".resize rect").attr("height", 3);
+//      d3.select(this)
+//        .append("g")
+//        .attr("class", "estcorrbrush_panels_g")
+//
+//        .append("rect").attr("x",15).attr("y",15).attr("width",10).attr("height",20).attr("fill","red");
+//    });
+
+//      .each(function(d) {
+//          console.log("each.d", d3.select(this));
+//        var estbrushInstance = d3.select(this).call(y[d].corrbrush = d3.svg.brush().x(estcorr_xscale));
+//        estbrushInstance.on("brushstart", estcorr_brushstart).on("brush", (d)=>{return estcorr_brushed(d);});
+//        var slider = estbrushInstance.append("g")
+//          .attr("transform", "translate("+ [0,height-5]+")");
+//        y[d].corrbrush.extent([0.,0.3]);
+//        y[d].corrbrush(slider);
+//        //slider.selectAll("rect.background").attr("height", 300);
+//        slider.selectAll("rect.extent").attr("height", 101);
+//        slider.selectAll("rect.extent").attr("width", 101 );
+//
+//        slider.selectAll(".resize rect").attr("height", 3);
+//      })
+//      .selectAll("rect")
+//      .attr("x", -8)
+//      .attr("width", 16)
+//      .attr("height", 13);
+
+
+//    estbrushInstance = d3.svg.brush().x(estcorr_xscale);
+//    estbrushInstance.on("brushstart", estcorr_brushstart).on("brush", ()=>{return estcorr_brushed(corr_ellsG);});
+//    var slider = corr_ellsG.append("g")
+//      .attr("transform", "translate("+ [0,corrBrush_height-5]+")");
+//    console.log("estbrushInstance",estbrushInstance);
+//    estbrushInstance.extent([0.,0.1]);
+//    estbrushInstance(slider);
+//    //slider.selectAll("rect.background").attr("height", 300);
+//    slider.selectAll("rect.extent").attr("height", 10);
+//    slider.selectAll("rect.extent").attr("width", 10);
+//
+//    slider.selectAll(".resize rect").attr("height", 3);
+
+
+
+  }
+
+
+  $().ready(function(){
+
+    $.getJSON( "http://localhost:5000/proghist/parallelcoord/iriscorr/fetchData", function( data_ ) {
+      start(data_);
+    });
+
+    $("#sepal_w_brush_btn").click(function(){
+        //applyCorrbrush("petal_len", 3.2);
+    });
+
+  });
+
+</script>

@@ -1,0 +1,61 @@
+
+<!--
+
+see: https://www.youtube.com/watch?v=KhONK158L_A
+
+-->
+
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.background{
+  visibility: visible !important;
+  fill:#dedede;
+}
+
+
+.extent{
+  visibility: visible !important;
+  fill:#000;
+}
+
+
+.resize rect{
+  visibility: visible !important;
+  fill:#00ab00;
+}
+
+</style>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+
+<script>
+  var margin = {top: 30, right: 10, bottom: 10, left: 10};
+  var width = 960 - margin.left - margin.right;
+  var height = 500 - margin.top - margin.bottom;
+
+  var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+  var xscale = d3.scale.linear().domain([-1,1]).range([0,300]);
+  var yscale = d3.scale.linear().domain([-1,1]).range([0,300]);
+
+  var brush = d3.svg.brush().x(xscale).y(yscale);
+  var slider = svg.append("g")
+      .attr("transform", "translate("+[100,100]+")");
+
+  brush.extent([0.,0.1]);
+  brush(slider);
+  slider.selectAll("rect.background").attr("height", 300);
+  slider.selectAll("rect.extent").attr("height", 20);
+  slider.selectAll(".resize rect").attr("height", 5);
+</script>
+
+</body>
+</html>

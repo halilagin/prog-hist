@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+  <style>
+    .box {
+      border: 1px solid black;
+      border-radius: 10px;
+    }
+
+    .circular_brush{
+      stroke: blue;
+      stroke-width: 0.5;
+      fill: none;
+    }
+
+    .circular_brush_handle{
+      stroke: blue;
+      stroke-width: 0.5;
+      fill: blue;
+    }
+
+    .circular_brush_dragstart{
+      stroke: red;
+    }
+
+    .circular_brush_dragend{
+      stroke: blue;
+    }
+
+  </style>
+
+
+  <script
+    src="https://code.jquery.com/jquery-3.2.1.min.js"
+    integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+    crossorigin="anonymous"></script>
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+
+
+</head>
+<body>
+
+
+<script type="text/javascript">
+
+
+
+
+
+
+  var circularBrushConfig={};
+  var boxWidth = 400;
+  var boxHeight = 400;
+
+  var svg = d3.select('body')
+    .append('svg')
+    .attr('class', 'box')
+    .attr('width', boxWidth)
+    .attr('height', boxHeight);
+
+
+
+  function circular_brush_handle_dragstart(this_){
+    var this__= d3.select(this_);
+    this__.style('fill', 'red');
+  }
+
+  function circular_brush_handle_drag(this_){
+    var this__= d3.select(this_);
+    this__.attr('cx', d3.event.x)
+      .attr('cy', d3.event.y);
+
+    var clazz = $(this_).attr("class").split(" ")[1];
+    var _idx= clazz.indexOf("_");
+    var idxes =clazz.substring(_idx+1).split("_");
+
+    var brushIdx= idxes[0];
+    var handleIdx = idxes[1];
+
+    var brushHandle =circularBrushConfig.brushes[brushIdx].brush.b1;
+    if (handleIdx==1)
+      brushHandle = circularBrushConfig.brushes[brushIdx].brush.b2;
+
+    var newR = Math.sqrt(Math.pow(d3.event.x-circularBrushConfig.brushes[brushIdx].x, 2)+Math.pow(d3.event.y-circularBrushConfig.brushes[brushIdx].y, 2));
+    brushHandle.attr("r", newR);
+    console.log("newR", newR);
+  }
+
+  function circular_brush_handle_dragend(this_){
+    var this__= d3.select(this_);
+    this__.style('fill', 'blue');
+  }
+
+
+  var drag = d3.behavior.drag()
+    .on('dragstart', function () {
+        circular_brush_handle_dragstart(this);
+
+    })
+    .on('drag', function () {
+      circular_brush_handle_drag(this);
+
+    })
+    .on('dragend', function () {
+      circular_brush_handle_dragend(this);
+
+    });
+
+  function init() {
+    var circle = svg.selectAll('.draggableCircle')
+      .data([{
+        x: (boxWidth / 2),
+        y: (boxHeight / 2),
+        r: 5
+      }])
+      .enter()
+      .append('svg:circle')
+      .attr('class', 'draggableCircle circular_brush_handle')
+      .attr('cx', function (d) {
+        return d.x;
+      })
+      .attr('cy', function (d) {
+        return d.y;
+      })
+      .attr('r', function (d) {
+        return d.r;
+      })
+      .call(drag);
+
+  }
+
+
+  function createCircularBrush(g_, cbConfig, idx){//cb:circular brush
+    var cb = cbConfig.brushes[idx];
+    var x  = cb.x;
+    var y = cb.y;
+    var r1 = cb.r1;
+    var r2 = cb.r2;
+
+    var circularBrush = {"b1":null,"b2":null, "b1handle":null, "b2handle":null};
+
+
+    circularBrush.b2= g_.append("svg:circle")
+      .attr("class", "circular_brush circular_brush_c2")
+      .attr('cx', cbConfig.brushes[idx].x)
+      .attr('cy', cbConfig.brushes[idx].y)
+      .attr('r', cbConfig.brushes[idx].r2)
+      .style('fill', "lightgreen")
+
+      .call(drag);
+
+    circularBrush.b1= g_.append("svg:circle")
+      .attr("class", "circular_brush circular_brush_c1")
+      .attr('cx', cbConfig.brushes[idx].x)
+      .attr('cy', cbConfig.brushes[idx].y)
+      .attr('r', cbConfig.brushes[idx].r1)
+      .style('fill', "white")
+
+      .call(drag);
+
+    circularBrush.b1handle= g_.append("svg:circle")
+      .attr("class", "circular_brush_handle cbhandle_"+idx+"_"+0)
+      .attr('cx', cbConfig.brushes[idx].x+cbConfig.brushes[idx].r1)
+      .attr('cy', cbConfig.brushes[idx].y)
+      .attr('r', 4)
+      .call(drag);
+
+    circularBrush.b2handle= g_.append("svg:circle")
+      .attr("class", "circular_brush_handle cbhandle_"+idx+"_"+1)
+      .attr('cx', cbConfig.brushes[idx].x+cbConfig.brushes[idx].r2)
+      .attr('cy', cbConfig.brushes[idx].y)
+      .attr('r', 4)
+      .call(drag);
+
+
+    cbConfig.brushes[idx].brush = circularBrush;
+
+
+  }
+
+  function createCircularBrushes(svg_, cbConfig){
+      for (var i=0;i<cbConfig.brushes.length;i++) {
+        createCircularBrush(svg_,cbConfig,i);
+      }
+  }
+
+
+  function CircularBrushConfig() {
+    this.brushes= [
+      {"x":0,"y":0,"r1":0,"r2":0, brush:null},
+      {"x":0,"y":0,"r1":0,"r2":0, brush:null}
+    ];
+
+    this.scales={
+      "xscale":d3.scale.linear().domain([0,boxWidth]).range([-1, 1]),
+      "yscale":d3.scale.linear().domain([boxWidth,0]).range([-1, 1]),
+      "rscale":d3.scale.linear().domain([0,boxWidth]).range([0, 1])
+    };
+
+    this.positionBrush = function (idx, x,y, r){
+      this.brushes[idx].x = this.scales.xscale(x);
+      this.brushes[idx].y = this.scales.yscale(y);
+      this.brushes[idx].r1 = this.scales.rscale(r);
+      this.brushes[idx].r2 = this.scales.rscale(r*1.1);
+      console.log(this.brushes);
+    }
+
+    this.invertPositionBrush = function (idx, x,y, r){
+      this.brushes[idx].x = this.scales.xscale.invert(x);
+      this.brushes[idx].y = this.scales.yscale.invert(y);
+      this.brushes[idx].r1 = this.scales.rscale.invert(r);
+      this.brushes[idx].r2 = this.scales.rscale.invert(r*1.1);
+      console.log(this.brushes);
+    }
+
+    this.position = function (idx, x,y, r){
+      this.brushes[idx].x = x;
+      this.brushes[idx].y = y;
+      this.brushes[idx].r1 = r;
+      this.brushes[idx].r2 = r*1.1;
+      console.log(this.brushes);
+    }
+  }
+
+
+  function createCircularBrushesData(){
+
+    circularBrushConfig = new CircularBrushConfig();
+    circularBrushConfig.invertPositionBrush(0, 0, 0, 0.1);
+    circularBrushConfig.invertPositionBrush(1, 0.3,0.3,0.1);
+  }
+
+
+  $().ready(function(){
+      console.log("ready");
+      createCircularBrushesData();
+      createCircularBrushes(svg, circularBrushConfig);
+      //init();
+  });
+
+
+</script>
+</body>
+</html>

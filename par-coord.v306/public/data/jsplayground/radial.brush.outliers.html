@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+  <style>
+    .box {
+      border: 1px solid black;
+      border-radius: 10px;
+    }
+
+    .circular_brush{
+      stroke: blue;
+      stroke-width: 0.5;
+      fill: none;
+    }
+
+    .circular_brush_handle{
+      stroke: blue;
+      stroke-width: 0.5;
+      fill: blue;
+    }
+
+    .circular_brush_c2 {
+      opacity: 0.4;
+    }
+
+    .circular_brush_dragstart{
+      stroke: red;
+    }
+
+    .circular_brush_dragend{
+      stroke: blue;
+    }
+
+    .radial_brush_b{
+      opacity: 0.2;
+      background-color: #f8efc0;
+      fill:green;
+    }
+
+  </style>
+
+
+  <script
+    src="https://code.jquery.com/jquery-3.2.1.min.js"
+    integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+    crossorigin="anonymous"></script>
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+
+
+</head>
+<body>
+
+
+<script type="text/javascript">
+
+
+
+
+  var radialBrushConfig={};
+  var boxWidth = 100;
+  var boxHeight = 100;
+
+  var svg = d3.select('body')
+    .append('svg')
+    .attr('class', 'box')
+    .attr('width', boxWidth)
+    .attr('height', boxHeight)
+    .style("padding", "5px");
+</script>
+
+<script type="text/javascript" src="/public/data/js/VarRadialBrush.js"></script>
+
+<script type="text/javascript">
+
+  $().ready(function(){
+      console.log("ready");
+    $.getJSON( "http://localhost:5000/proghist/parallelcoord/iriscorr/fetchData", function( data_ ) {
+
+        new VarRadialBrush(svg).start(data_, "petal_len", "petal_w");
+    });
+  });
+
+</script>
+</body>
+</html>

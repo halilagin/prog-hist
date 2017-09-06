@@ -1,2 +1,0 @@
-# prog-hist
-prog-hist

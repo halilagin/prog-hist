@@ -1,0 +1,1185 @@
+
+<!--
+classical parallel coordinates
+see: https://bl.ocks.org/jasondavies/1341281
+
+programatic brushing
+see: http://bl.ocks.org/timelyportfolio/5c136de85de1c2abb6fc
+
+ordinal scale brushing
+see: http://bl.ocks.org/chrisbrich/4173587
+
+multiple brushes
+see: http://bl.ocks.org/ludwigschubert/0236fa8594c4b02711b2606a8f95f605
+http://bl.ocks.org/jssolichin/54b4995bd68275691a23
+
+
+context menu
+see: http://bl.ocks.org/jakosz/ce1e63d5149f64ac7ee9
+
+circular arc
+see: http://jsfiddle.net/h9XNz/
+
+spatial sign
+see: https://topepo.github.io/recipes/reference/step_spatialsign.html
+see: https://github.com/topepo/recipes/blob/master/R/spatialsign.R
+-->
+
+
+
+<!DOCTYPE html>
+<head>
+<meta charset="utf-8">
+<style>
+
+  svg {
+    font: 10px sans-serif;
+  }
+
+  .background path {
+    fill: none;
+    stroke: #ddd;
+    shape-rendering: crispEdges;
+  }
+
+  .foreground path {
+    fill: none;
+    stroke: steelblue;
+  }
+
+  .brush .extent {
+    fill-opacity: .3;
+    stroke: #fff;
+    shape-rendering: crispEdges;
+  }
+
+  .clusterbrush_panel {
+    background-color: #f8efc0;
+  }
+
+  .axis line,
+  .axis path {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+  }
+
+  .axis text {
+    text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
+    cursor: move;
+  }
+
+  .cluster_brush_c2{
+    opacity: 0.6;
+    fill:green;
+    background-color: #f8efc0;
+  }
+
+  .cluster_brush_c1{
+    opacity: 0.8;
+    fill:green;
+    background-color: #f8efc0;
+  }
+
+  .radial_brush_b{
+    opacity: 0.2;
+    background-color: #f8efc0;
+    fill:green;
+  }
+
+  .radial_brush_h2 {
+    opacity: 0.2;
+    fill:green;
+    background-color: #f8efc0;
+
+  }
+  .radial_brush_h1 {
+    opacity: 0.2;
+    fill:green;
+    background-color: #f8efc0;
+
+  }
+
+
+  .ss_point_active{
+    background-color: red;
+    fill:red !important;
+  }
+</style>
+<script
+  src="https://code.jquery.com/jquery-3.2.1.min.js"
+  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+  crossorigin="anonymous"></script>
+</head>
+<body>
+
+<div>
+  <button id="sepal_w_brush_btn">show brush</button>
+
+</div>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="/public/data/js/SVGContextMenu.js"></script>
+
+<script>
+
+  var margin = {top: 30, right: 10, bottom: 10, left: 10};
+  var width = 960 - margin.left - margin.right;
+  var height = 450 - margin.top - margin.bottom;
+  var underHeightLength=250;
+  var x = d3.scale.ordinal().rangePoints([0, width], 1);
+  var y = {};
+  var boxWidth=100;
+  var boxHeight=100;
+  var circularBrushConfig={};
+
+
+  var dragging = {};
+
+  var line = d3.svg.line(),
+    axis = d3.svg.axis().orient("left"),
+    background,
+    foreground;
+
+  var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom+underHeightLength)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  var clusterBrushContainer = d3.select('body')
+    .append('svg')
+    .attr('class', 'box')
+    .attr('width', boxWidth+30)
+    .attr('height', boxHeight+30)
+    .style("padding", "5px");
+
+  var corrbrushGridG = svg.append("g")
+    .attr("class", "corrbrushgrid")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", 400)
+    .attr("transform", "translate(" + 0 + "," + 10 + ")");
+
+
+
+  /*
+    estcorrbrush:start
+   */
+  var dimscales={};
+  var corrBrushes={};
+  var estcorrbrush_panels;
+  var estbrushInstance;
+
+  var estcorr_xscale = d3.scale.linear().domain([-1, 1]).range([0, 70]);
+  var estcorr_yscale = d3.scale.linear().domain([-1, 1]).range([70, 0]);
+  var estcorr_rscale = d3.scale.linear().domain([0, 2]).range([0, 70]);
+  var estcorr_line = d3.svg.line()
+    .x(function(d) { return estcorr_xscale(d.x); })
+    .y(function(d) { return estcorr_yscale(d.y); });
+
+  /*
+   estcorrbrush:end
+   */
+
+  /*
+    sigma slider brushes
+   */
+
+  var sigmaSlider_xScale = d3.scale.linear().domain([0,3]).range([0,70]);
+  var sigmaSlider_rxScale = d3.scale.linear().domain([0,70]).range([0,3]);
+
+  var sigmaSlider_axis = d3.svg.axis().scale(sigmaSlider_xScale)
+    .tickValues([0,0.5,1,1.5,2,2.5,3])
+    .tickFormat(function(v,i){ // <-C
+      return i%2==0?parseInt(v):v;
+    });
+
+</script>
+
+<script type="text/javascript" src="/public/data/js/VarClusterBrush.js"></script>
+<script type="text/javascript" src="/public/data/js/VarRadialBrush.js"></script>
+
+<script type="text/javascript" >
+
+  function position(d) {
+    var v = dragging[d];
+    return v == null ? x(d) : v;
+  }
+
+  function transition(g) {
+    return g.transition().duration(500);
+  }
+
+  // Returns the path for a given data point.
+  function path(d) {
+    return line(dimensions.map(function(p) { return [position(p), y[p](d[p])]; }));
+  }
+
+  function sigmaSlider_brushstart(){
+
+  }
+
+
+  var VarBrushedPoint = function(brushType, active, dimName, dimIdx, brushIdx){
+    this.brushType = "corr";
+    this.active=true;
+    this.dimName=dimName;
+    this.dimIdx=dimIdx;
+    this.brushIdx = brushIdx;
+    this.judgeOfBrushes = {"corr":false, "circular":false, "radial":false};
+    this.display = function (){
+
+      var keys_ = Object.keys(this.judgeOfBrushes);
+
+      var result = keys_.some((key_)=>{
+        if (this.judgeOfBrushes[key_]) {
+           return true;
+        }
+        return false;
+      });
+
+
+      return result;
+    };
+
+  };
+
+  function brushstart() {
+    var dimidx=dimensionBrush_dim_idx(this);
+    if (d3.event.sourceEvent===undefined ||  d3.event.sourceEvent===null) {
+      //brushing from corrbrush or sigmabrush.
+      if (y[dimidx.dim].brushes[dimidx.idx]["state"]==null || y[dimidx.dim].brushes[dimidx.idx]["state"]==undefined)
+        y[dimidx.dim].brushes[dimidx.idx]["state"]={"triggerSource":"corrbrush_or_sigmabrush"};
+      else
+        y[dimidx.dim].brushes[dimidx.idx]["state"]["triggerSource"]="corrbrush_or_sigmabrush";
+      return;
+    } else {
+      //brushing from the dimension axis.
+      if (y[dimidx.dim].brushes[dimidx.idx]["state"]==null || y[dimidx.dim].brushes[dimidx.idx]["state"]==undefined)
+        y[dimidx.dim].brushes[dimidx.idx]["state"]={"triggerSource":"ydimension"};
+      else
+        y[dimidx.dim].brushes[dimidx.idx]["state"]["triggerSource"]="ydimension";
+
+    }
+
+    if (d3.event.sourceEvent.stopPropagation===undefined || d3.event.sourceEvent.stopPropagation===null)
+      return;
+    d3.event.sourceEvent.stopPropagation();
+  }
+
+  function dimensionBrush_dim_idx(obj){
+      var clazz_ = $(obj).parent().attr("class");
+    var dim_ = clazz_.split(" ")[1].substring("dimension_".length);
+    var brush_clazz = $(obj).attr("class").split(" ")[1];
+    var brushIdx=  +brush_clazz.substring(brush_clazz.lastIndexOf("_")+1);
+
+    return {"dim":dim_, "idx":brushIdx};
+  }
+
+
+  function createNewDimensionBrush(dimidx){
+      //y[dimidx.dim].brushes[dimidx.idx]
+
+    var newIdx = y[dimidx.dim].brushes.length;
+    var lastBrush = y[dimidx.dim].brushes[y[dimidx.dim].brushes.length-1];
+    var firstBrush = y[dimidx.dim].brushes[0];
+
+    var brushSelection = svg.selectAll(".dimension_"+dimidx.dim)
+      .data([dimidx.dim]);
+
+    brushSelection.append("g")
+      .attr("class", "brush dimension_brush_"+dimidx.dim+"_"+newIdx)
+      .each(function(d) {
+        //multi-brushes
+
+        var brush_ = d3.svg.brush().y(y[d]).on("brushstart", brushstart).on("brush", brush).on("brushend",brushend);
+        y[d].brushes.push( brush_);
+        d3.select(this).call(brush_);
+      })
+      .selectAll("rect")
+      .attr("x", -8)
+      .attr("width", 16);
+
+
+
+    var lastBrushExtent = lastBrush.extent();
+    var newBrush = y[dimidx.dim].brushes[y[dimidx.dim].brushes.length-1];
+    newBrush.extent(firstBrush.extent());
+    firstBrush.extent([0,0]);
+
+
+    var firstObj = $(".dimension_brush_"+dimidx.dim+"_0").find(".extent");
+
+    var newObj = $(".dimension_brush_"+dimidx.dim+"_"+(y[dimidx.dim].brushes.length-1)).find(".extent");
+    var prevObj = $(".dimension_brush_"+dimidx.dim+"_"+(y[dimidx.dim].brushes.length-2)).find(".extent");
+
+    newObj.attr("y", firstObj.attr("y"));
+    newObj.attr("height", firstObj.attr("height"));
+    firstObj.attr("y", 0);
+    firstObj.attr("height", 0);
+
+
+
+    //remove pointer-events except last added brush
+    for (var i=0;i<y[dimidx.dim].brushes.length;i++){
+        var pointersEvents_css = "none";
+        if (i==0)
+          pointersEvents_css="all";
+        var css_p = ".dimension_brush_"+dimidx.dim+"_"+i;
+        $(css_p).find(".background").css("pointer-events", pointersEvents_css);
+        $(css_p).css("pointer-events", "all");
+
+    }
+
+
+  }
+
+  function createDimIdxStruct(clazz){
+    var dim_idx = clazz.substring("dimension_brush_".length);//dimension_brush_dim_3
+    var last__ = dim_idx.lastIndexOf("_");
+    var dim = dim_idx.substring(0,last__);
+    var idx = +dim_idx.substring(last__+1);
+    var dimidx = {"dim":dim, "idx":idx};
+    return dimidx;
+  }
+
+  function brushend() {
+    var clazz = $(this).attr("class").split(" ")[1];
+    var dimidx = createDimIdxStruct(clazz);
+    var firstBrush = y[dimidx.dim].brushes[0];//first brush
+    var firstBrushExtent = firstBrush.extent();
+    if (y[dimidx.dim].brushes[dimidx.idx]["state"]==null || y[dimidx.dim].brushes[dimidx.idx]["state"]==undefined) {
+        console.log("no trigger source for y axis brushing").
+      return;
+    }
+
+    if (y[dimidx.dim].brushes[dimidx.idx]["state"].triggerSource=="ydimension"){
+        //create new a brush
+      var dimensionIdx = findDimensionIndexByDimName(dimidx.dim);
+      var key_ = dimensions[dimensionIdx-1] + "___" + dimensions[dimensionIdx];
+
+
+      if ( y[dimidx.dim].brushes[dimidx.idx]["state"]["state"]!="moving" //&&
+//        (corrBrushes[key_]["corrbrush_panels"][0].corrbrushState==null
+//          || corrBrushes[key_]["corrbrush_panels"][0].corrbrushState=="started"
+//          )
+        ) {
+        // corrBrushes[key_]["corrbrush"]["state"]=null means the estcorrbrush never triggered that indicates this line is executed because of mousedown.resizing.
+        // since estcorrbrush is not active or ended, the only source of brsuhing is by mousedown.resizing which indicates new brushing.
+        console.log("create new brush!");
+        createNewDimensionBrush(dimidx);
+        createCorrBrushPanel(dimensionIdx-1);
+      }
+
+    }
+
+
+
+    y[dimidx.dim].brushes[dimidx.idx]["state"]["state"]="end";
+  }
+
+  function findDimensionIndexByDimName(dimname){
+      for (var i=0;i<dimensions.length;i++){
+          if (dimensions[i]===dimname)
+              return i;
+      }
+      return -1;
+  }
+
+  // Handles a brush event, toggling the display of foreground lines.
+  function brush() {
+    var dimidx = dimensionBrush_dim_idx(this);
+    if (y[dimidx.dim].brushes[dimidx.idx]["state"]==null || y[dimidx.dim].brushes[dimidx.idx]["state"]==undefined) {
+      console.log("no trigger source for y axis brushing while brushing or resizing").
+        return;
+    }
+
+
+    y[dimidx.dim].brushes[dimidx.idx]["state"]["state"]="";
+    if (d3.event.type === "brush" && d3.event.mode === "resize") {
+      y[dimidx.dim].brushes[dimidx.idx]["state"]["state"]="resizing";
+
+      var classes_ = $(this).parent().attr("class").split(" ");
+      var dimclass = "";
+      for (var i = 0; i < classes_.length; i++) {
+        if (classes_[i] && classes_[i].startsWith("dimension_")) {
+          dimclass = classes_[i].substring("dimension_".length);
+          break;
+        }
+      }
+      var dimemsionIdx = findDimensionIndexByDimName(dimclass);
+      var corrbrush_key = dimensions[dimemsionIdx-1] + "___" + dimensions[dimemsionIdx];
+    }
+
+    else {
+        //brush is moving.
+      markBrushedLines(dimidx);
+    }
+  }
+
+  function isInClusterBrush(rowIdx){
+    //brushedPointIndexes
+    //ClusterBrushSelectedPointIndexes[clusterBrushPanelDimName]
+    var tf = false;
+      var brushPanels = Object.keys(ClusterBrushSelectedPointIndexes);//it is a variable in VarClusterBrush.js
+      for (var b=0;b<brushPanels.length;b++){
+        var brushPanelDimName = brushPanels[b];
+        var brushedPointIndexes =ClusterBrushSelectedPointIndexes[brushPanelDimName];
+
+        for (var c = 0; c < brushedPointIndexes.length; c++) {//c:cluster
+          var cluster = brushedPointIndexes[c];
+          for (var i = 0; i < cluster.length; i++) {
+            var yIdx = cluster[i];//yIdx is the one should be colored.
+            if (yIdx == rowIdx) {
+              tf = true;//brushed index in cluster is equal to the rowIdx of y dimension.
+              break;
+            }
+          }
+          if (tf == true) break;
+        }
+    }
+    return tf;
+
+  }
+
+  function isInRadialBrush(rowIdx){
+    //brushedPointIndexes
+    //ClusterBrushSelectedPointIndexes[clusterBrushPanelDimName]
+    var tf = false;
+    var brushPanels = Object.keys(RadialBrushSelectedPointIndexes);//it is a variable in VarRadialBrush.js
+
+    for (var b=0;b<brushPanels.length;b++){
+      var brushPanelDimName = brushPanels[b];
+      var brushedPointIndexes =RadialBrushSelectedPointIndexes[brushPanelDimName];
+
+      for (var c = 0; c < brushedPointIndexes.length; c++) {//c:cluster
+        var yIdx = brushedPointIndexes[c];
+        if (yIdx == rowIdx) {
+          tf = true;//brushed index in cluster is equal to the rowIdx of y dimension.
+          break;
+        }
+        if (tf == true) break;
+      }
+    }
+    return tf;
+
+  }
+
+
+
+  function markBrushedLines(dimidx){
+      if (y[dimidx.dim].brushes[dimidx.idx]["state"]==null || y[dimidx.dim].brushes[dimidx.idx]["state"]==undefined)
+        y[dimidx.dim].brushes[dimidx.idx]["state"]={};
+
+    y[dimidx.dim].brushes[dimidx.idx]["state"]["state"]="moving";
+
+
+    var markedPaths=[];
+    foreground.each( function (dim_, rowIdx) {
+      markedPaths.push(new VarBrushedPoint("", true, "", 0, rowIdx));
+
+    });
+
+    var activeDimensions = dimensions.filter(function (p) {
+      var brush_ = y[p]["brushes"][0];
+      if (y[p]["brushes"]==null || y[p]["brushes"].length==0)
+        return false;
+
+      var tf=false;
+      for (var i=0;i<y[p]["brushes"].length;i++)
+        if (!y[p]["brushes"][i].empty())
+          tf=true;
+      return tf;
+    });
+
+    var extentsOfDim = activeDimensions.map(function (p) {
+      var extents_=[];
+      for (var i=0;i<y[p]["brushes"].length;i++)
+        if (!y[p]["brushes"][i].empty())
+          extents_.push(y[p]["brushes"][i].extent());
+      return extents_;// [extents1,extents2]; extents=[1.2,1.6]
+    });
+
+//    foreground.style("display", function (dim_, rowIdx) {
+//       var basicExtents = activeDimensions.every(function (dimName, dimIdx) {
+//        var tf=false;
+//        for (var k=0;k<extentsOfDim[dimIdx].length;k++) {
+//          var extentList = extentsOfDim[dimIdx];//a dim has many extents
+//          var ith_extent = extentList[k]; //each extentlist has many extents
+//          var val_ = +dim_[dimName];
+//          var inBasicBrush = ith_extent[0] <=val_  && val_ <= ith_extent[1];
+//
+//          markedLines.push({"brushType":"corr", "idx":k, active:true, "dimName":dimName });
+//          if (inBasicBrush)
+//            tf = true;
+//        }
+//
+//        var inClusterBrush = isInClusterBrush(dim_, dimName,dimIdx,rowIdx);
+//        //var inRadialBrush = isInRadialBrush(dim_, dimName,dimIdx,rowIdx);
+//
+//        tf = tf || inClusterBrush ;
+//        return tf;
+//      }) ? null : "none";
+//
+//      //do brushing for other types such as cluster brushing, outlier brushing.
+//
+//
+//      console.log("brush.tf",rowIdx, basicExtents);
+//
+//      return basicExtents;
+//    });
+
+
+
+
+    foreground.each( function (dim_, rowIdx) {
+        activeDimensions.every(function (dimName, dimIdx) {
+        var tf=false;
+        for (var k=0;k<extentsOfDim[dimIdx].length;k++) {
+          var extentList = extentsOfDim[dimIdx];//a dim has many extents
+          var ith_extent = extentList[k]; //each extentlist has many extents
+          var val_ = +dim_[dimName];
+          var inBasicBrush = ith_extent[0] <=val_  && val_ <= ith_extent[1];
+
+
+
+
+          if (inBasicBrush) {
+            markedPaths[rowIdx].judgeOfBrushes.corr = true;
+          } else {
+
+            markedPaths[rowIdx].judgeOfBrushes.corr = false;
+          }
+        }
+
+        //var inClusterBrush = isInClusterBrush(dim_, dimName,dimIdx,rowIdx);
+        //var inRadialBrush = isInRadialBrush(dim_, dimName,dimIdx,rowIdx);
+
+        //tf = tf || inClusterBrush ;
+
+      });
+
+
+    });
+
+
+    markedPaths.forEach((row,idx)=>{
+      row.judgeOfBrushes.radial=isInRadialBrush(idx);
+      row.judgeOfBrushes.circular=isInClusterBrush(idx);
+      if (row.judgeOfBrushes.circular){
+          console.log("circular.true.idx", idx);
+      }
+    });
+
+
+//    if (Object.keys(RadialBrushSelectedPointIndexes).length>0)
+//      foreground.style("display", function (dim_, rowIdx) {
+//        var a = isInRadialBrush(rowIdx)?null:"none";
+//        return a;
+//      });
+
+
+
+    foreground.style("display", function (dim_, rowIdx) {
+      return markedPaths[rowIdx].display()?null:"none";
+    });
+    console.log("markedPaths.length", markedPaths.length);
+
+  }
+
+
+
+
+  function estcorr_brushstart() {
+
+    var clazz = $(this).attr("class");
+    var key_idx = clazz.substring("estcorrbrush_slider_".length);//estcorrbrush_slider_key_3
+    var last__ = key_idx.lastIndexOf("_");
+    var key_ = key_idx.substring(0,last__);
+    var corrBrushIdxOfDim_ = +key_idx.substring(last__+1);
+    var localDims = key_.split("___");
+
+    corrBrushes[key_]["corrbrush_panels"][corrBrushIdxOfDim_].corrbrushState="started";
+  }
+
+
+
+  function estcorr_brushend() {
+
+    var clazz = $(this).attr("class");
+    var key_idx = clazz.substring("estcorrbrush_slider_".length);//estcorrbrush_slider_key_3
+    var last__ = key_idx.lastIndexOf("_");
+    var key_ = key_idx.substring(0,last__);
+    var corrBrushIdxOfDim_ = +key_idx.substring(last__+1);
+    var localDims = key_.split("___");
+
+
+
+    corrBrushes[key_]["corrbrush_panels"][corrBrushIdxOfDim_].corrbrushState="ended";
+    var dimidx = {"dim":localDims[1],"idx":corrBrushIdxOfDim_};
+    markBrushedLines(dimidx);
+    if (d3.event.sourceEvent===undefined || d3.event.sourceEvent===null)
+      return;
+    if (d3.event.sourceEvent.stopPropagation===undefined || d3.event.sourceEvent.stopPropagation===null)
+      return;
+
+    d3.event.sourceEvent.stopPropagation();
+
+
+  }
+
+
+
+  function estcorr_estimateMuVariance(key_, corrBrushIdxOfDim_){
+
+
+//    //find mean and var of second correlated variable
+//    //kevin murphy page 111.
+//
+
+    var ex = corrBrushes[key_]["corrbrush_panels"][corrBrushIdxOfDim_].corrbrush.extent();
+    ex = (ex[0]+ex[1]) / 2.0;
+
+    var m1 = dimscales[key_].xscale(estcorr_remote_data.eigens[key_].m1);
+    var m2 = dimscales[key_].yscale(estcorr_remote_data.eigens[key_].m2);
+    var cov = estcorr_remote_data.eigens[key_].cov;
+    var invcov = estcorr_remote_data.eigens[key_].invcov;
+    var newm1 = ex;
+    var newm2 = m2+cov[0][1]*(1./cov[0][0])*(newm1-m1);
+    var newm2_origscale = dimscales[key_].ryscale(newm2);
+    var variance = cov[1][1] -  cov[0][1]*(1./cov[0][0])*cov[1][0];
+    return {"mu":newm2_origscale, "variance":variance};
+  }
+
+  function estcorr_brushed() {
+    var clazz = $(this).attr("class");
+    var key_idx = clazz.substring("estcorrbrush_slider_".length);//estcorrbrush_slider_key_3
+    var last__ = key_idx.lastIndexOf("_");
+    var key_ = key_idx.substring(0,last__);
+    var corrBrushIdxOfDim_ = +key_idx.substring(last__+1);
+    var localDims = key_.split("___");
+
+
+    //estcorr_remote_data.eigens[key_]
+    var ex = corrBrushes[key_]["corrbrush_panels"][corrBrushIdxOfDim_].corrbrush.extent();
+    ex = (ex[0]+ex[1]) / 2.0;
+    corrBrushes[key_]["corrbrush_panels"][corrBrushIdxOfDim_].ellpanel
+      .selectAll(".estcorrvertpath")
+      //.data([{"x":ex,"y":0}, {"x":ex,"y":0.5}])
+      //.append("path")
+      .attr("class", "estcorrvertpath")
+      .attr("stroke", "blue")
+      .attr("stroke-width", 0.5)
+      .attr("fill", "none")
+      .attr("d", estcorr_path([{"x":ex,"y":-1}, {"x":ex,"y":1}]))
+    ;
+
+    var muvar = estcorr_estimateMuVariance(key_,corrBrushIdxOfDim_);
+    var sigma_ = Math.sqrt(muvar.variance);
+
+
+    var y_ = dimscales[key_].yscale(muvar.mu);
+    corrBrushes[key_]["corrbrush_panels"][corrBrushIdxOfDim_].ellpanel
+      .selectAll(".estcorrhorpath")
+      //.data([{"x":ex,"y":0}, {"x":ex,"y":0.5}])
+      //.append("path")
+      .attr("class", "estcorrhorpath")
+      .attr("stroke", "blue")
+      .attr("stroke-width", 0.5)
+      .attr("fill", "none")
+      .attr("d", estcorr_path([{"x":-1,"y":y_}, {"x":1,"y":y_}]))
+    ;
+
+    applyCorrbrushBySigmaSlider(key_,corrBrushIdxOfDim_,localDims[0], localDims[1],muvar.mu, sigma_);
+  }
+
+
+  function applyCorrbrush(key_,corrBrushIdxOfDim, dim1,dim2, brush_mean, sigma) {
+
+    //sigma, 2*sigma=95%
+    var dim = dim2;
+    var ex_r = brush_mean;
+    var sigmaFactor = +corrBrushes[key_]["corrbrush_panels"][corrBrushIdxOfDim].sigmabrushed;
+
+    var ex_ = [ex_r-sigmaFactor*sigma, ex_r+sigmaFactor*sigma];
+
+    var corrBrushIdxOfDim_ = corrBrushIdxOfDim+1;// zeroth brush is invisible and is used to create new brushes. start from 1. so, +1.
+    (y[dim].brushes[corrBrushIdxOfDim_]).extent(ex_);
+    (y[dim].brushes[corrBrushIdxOfDim_])(d3.select(".dimension_"+dim).select(".dimension_brush_"+dim2+"_"+(corrBrushIdxOfDim_)).transition());
+    (y[dim].brushes[corrBrushIdxOfDim_]).event(d3.select(".dimension_"+dim).select(".dimension_brush_"+dim2+"_"+(corrBrushIdxOfDim_)).transition().delay(300));
+
+  }
+
+
+  function applyCorrbrushBySigmaSlider(key_,corrBrushIdxOfDim,dim1,dim2, brush_mean, sigma) {
+    applyCorrbrush(key_,corrBrushIdxOfDim,dim1,dim2, brush_mean, sigma);
+  }
+
+
+  // Returns the path for a given data point.
+  function estcorr_path(d) {
+    line_ =  estcorr_line(d);
+    return line_;
+  }
+
+
+  function sigmaSlider_brushend(){
+    var clazz = $(this).attr("class");
+    var key_idx = clazz.substring("estcorrbrush_sslider_".length);//estcorrbrush_slider_key_3
+    var last__ = key_idx.lastIndexOf("_");
+    var key_ = key_idx.substring(0,last__);
+    var corrBrushIdxOfDim_ = +key_idx.substring(last__+1);
+    var localDims = key_.split("___");
+
+
+
+    corrBrushes[key_]["corrbrush_panels"][corrBrushIdxOfDim_].corrbrushState="ended";
+    var dimidx = {"dim":localDims[1],"idx":corrBrushIdxOfDim_};
+    markBrushedLines(dimidx);
+    if (d3.event.sourceEvent===undefined || d3.event.sourceEvent===null)
+      return;
+    if (d3.event.sourceEvent.stopPropagation===undefined || d3.event.sourceEvent.stopPropagation===null)
+      return;
+
+    d3.event.sourceEvent.stopPropagation();
+  }
+
+
+  function sigmaSlider_brushed(){
+
+    var clazz = $(this).attr("class");
+    var key_idx = clazz.substring("estcorrbrush_sslider_".length);//estcorrbrush_slider_key_3
+    var last__ = key_idx.lastIndexOf("_");
+    var key_ = key_idx.substring(0,last__);
+    var corrBrushIdxOfDim_ = +key_idx.substring(last__+1);
+    var localDims = key_.split("___");
+
+
+
+    //estcorr_remote_data.eigens[key_]
+    var ex = corrBrushes[key_]["corrbrush_panels"][corrBrushIdxOfDim_].sigmabrush.extent();
+    var sigmaFactor_ = (ex[0]+ex[1])/2.0;
+    corrBrushes[key_]["corrbrush_panels"][corrBrushIdxOfDim_].sigmabrushed = sigmaFactor_;
+    var muvar = estcorr_estimateMuVariance(key_,corrBrushIdxOfDim_);
+    applyCorrbrushBySigmaSlider(key_,corrBrushIdxOfDim_, localDims[0], localDims[1], muvar.mu, Math.sqrt(muvar.variance) );
+  }
+
+  //searches for the count of brushes in the dim, determine the the count of brushes and return count+1
+  function dimension_nextBrushIdx(dim){
+      //class format dimension_brush_dimname_idx
+    var idx=-1;//no brush for that dim
+      for (var i=9;i>=0;i--){
+          var obj = $(".dimension_brush_"+dim+"_"+i).length;
+          if (obj!=0){
+              idx=i;
+              break;
+          }
+      }
+
+    return idx+1;
+
+  }
+
+  function createNewClusterBrush(dimName, markBrushedLinesCB){
+    var dimIdx = findDimensionIndexByDimName(dimName);
+    var d = dimensions[dimIdx];
+    var key_ = dimensions[dimIdx]+"___"+dimensions[dimIdx+1];
+    if (corrBrushes[key_]==undefined || corrBrushes[key_]==null)
+      corrBrushes[key_]={};
+
+    if (corrBrushes[key_]["corrbrush_panels"]==undefined || corrBrushes[key_]["corrbrush_panels"]==null )
+      corrBrushes[key_]["corrbrush_panels"]=[];
+
+    var newCorrBrushPanelIdx = corrBrushes[key_]["corrbrush_panels"].length;
+    var corrBrushPanelMargin = 110*(newCorrBrushPanelIdx);
+
+    var newCorrBrushPanel = {
+      "clusterbrushPanel":null,
+      "type":"clusterbrush"
+    };
+    corrBrushes[key_]["corrbrush_panels"].push(newCorrBrushPanel);
+
+    newCorrBrushPanel.clusterbrushPanel = corrbrushGridG.selectAll(".clusterbrush_panel_"+key_+"_"+newCorrBrushPanelIdx)
+      .data([0]).enter().append("g")
+      .attr("class", "clusterbrush_panel clusterbrush_panel_"+key_+"_"+newCorrBrushPanelIdx)
+      .attr("transform", function(){return "translate(" + [(x(dimensions[dimIdx])+50),height+corrBrushPanelMargin+10] + ")"; })
+    ;
+
+    newCorrBrushPanel.clusterbrushPanel.append("rect")
+      .attr("y", 0)
+      .attr("width", boxWidth)
+      .attr("height", boxWidth)
+      .attr("fill", "#dedede");
+
+    newCorrBrushPanel.clusterbrushPanel.datum({"dimName":key_});
+
+    $.getJSON( "http://localhost:5000/parcoord/iriskmeans/oftwovars?var1=petal_len&var2=petal_w&K=3", function( data_ ) {
+      new VarClusterBrush(newCorrBrushPanel.clusterbrushPanel).start(data_, markBrushedLinesCB);
+    });
+  }
+
+
+  function createNewRadialBrush(dimName, markBrushedLinesCB){
+    var dimIdx = findDimensionIndexByDimName(dimName);
+    var d = dimensions[dimIdx];
+    var key_ = dimensions[dimIdx]+"___"+dimensions[dimIdx+1];
+    if (corrBrushes[key_]==undefined || corrBrushes[key_]==null)
+      corrBrushes[key_]={};
+
+    if (corrBrushes[key_]["corrbrush_panels"]==undefined || corrBrushes[key_]["corrbrush_panels"]==null )
+      corrBrushes[key_]["corrbrush_panels"]=[];
+
+    var newRadialBrushPanelIdx = corrBrushes[key_]["corrbrush_panels"].length;
+    var corrBrushPanelMargin = 110*(newRadialBrushPanelIdx);
+
+    var newRadialBrushPanel = {
+      "radialbrushPanel":null,
+      "type":"radialbrush"
+    };
+    corrBrushes[key_]["corrbrush_panels"].push(newRadialBrushPanel);
+
+    newRadialBrushPanel.radialbrushPanel = corrbrushGridG.selectAll(".radialbrush_panel_"+key_+"_"+newRadialBrushPanelIdx)
+      .data([0]).enter().append("g")
+      .attr("class", "radialbrush_panel radialbrush_panel_"+key_+"_"+newRadialBrushPanelIdx)
+      .attr("transform", function(){return "translate(" + [(x(dimensions[dimIdx])+50),height+corrBrushPanelMargin+10] + ")"; })
+    ;
+
+    newRadialBrushPanel.radialbrushPanel.append("rect")
+      .attr("y", 0)
+      .attr("width", boxWidth)
+      .attr("height", boxWidth)
+      .attr("fill", "#dedede");
+
+    $.getJSON( "http://localhost:5000/parcoord/spatialsign/oftwovars?var1=petal_w&var2=petal_len", function( data_ ) {
+      new VarRadialBrush(newRadialBrushPanel.radialbrushPanel).start(data_, "petal_w___petal_len", markBrushedLinesCB);
+    });
+  }
+
+
+
+
+  function dimensionButtonSelected(dimName, selectedMenuItem){
+    console.log("dimensionButtonSelected", dimName, selectedMenuItem);
+
+      if (selectedMenuItem=="New cluster brush"){
+        createNewClusterBrush(dimName, markBrushedLines);
+      } else if (selectedMenuItem=="New radial brush"){
+        createNewRadialBrush(dimName, markBrushedLines);
+      }
+
+  }
+
+  function createDimensionButtons(g){
+    var menu = SVGContextMenu()
+      .items('New cluster brush', 'New radial brush', 'whatever, man')
+      .onSelect(function(dimName, selectedItem){
+        dimensionButtonSelected(dimName, selectedItem)
+      });
+
+    g.append("g")
+      .attr("class", (d)=>"dimension_buttonpanel dimension_buttonpanel_"+d)
+      .attr("transform", function(d) { return "translate(" + -5 +","+(height+5)  + ")"; })
+      .append("rect")
+      .attr("y", 0)
+      .attr("width", 10)
+      .attr("height", 10)
+      .attr("fill", "red")
+
+      .on('contextmenu', function(){
+        d3.event.preventDefault();
+        menu(d3.mouse(this)[0], d3.mouse(this)[1], this);
+      });
+//
+//    g.selectAll(".dimension_buttons")
+//      .data([0]).enter().append("g")
+//      .attr("class", "dimension_buttons")
+//      .attr("transform", function(){return "translate(" + [(x(dimensions[dimIdx])),height+corrBrushPanelMargin+10] + ")"; })
+//    ;
+//
+//    $.getJSON( "http://localhost:5000/parcoord/iriskmeans/oftwovars?var1=petal_len&var2=petal_w&K=3", function( data_ ) {
+//      new VarClusterBrush(newCorrBrushPanel.clusterbrushPanel).start(data_);
+//    });
+  }
+
+  function createCorrBrushPanel(dimIdx){
+    var eigens = estcorr_remote_data.eigens;
+    var d = dimensions[dimIdx];
+    var key_ = dimensions[dimIdx]+"___"+dimensions[dimIdx+1];
+    if (corrBrushes[key_]==undefined || corrBrushes[key_]==null)
+      corrBrushes[key_]={};
+
+    if (corrBrushes[key_]["corrbrush_panels"]==undefined || corrBrushes[key_]["corrbrush_panels"]==null )
+      corrBrushes[key_]["corrbrush_panels"]=[];
+
+    var newCorrBrushPanelIdx = corrBrushes[key_]["corrbrush_panels"].length;
+
+    var corrBrushPanelMargin = 110*(newCorrBrushPanelIdx);
+
+    var newCorrBrushPanel = {
+        "ellpanel":null,
+        "sigmapanel":null,
+        "corrbrush":null,
+        "corrbrushState":null,
+        "sigmabrush":null,
+        "sigmabrushed":null,
+        "type":"corrbrush"
+    };
+    corrBrushes[key_]["corrbrush_panels"].push(newCorrBrushPanel);
+
+    newCorrBrushPanel.ellpanel = corrbrushGridG.selectAll(".estcorrbrush_panel_"+key_+"_"+newCorrBrushPanelIdx)
+      .data([0]).enter().append("g")
+      .attr("class", "corrbrush_panel estcorrbrush_panel_"+key_+"_"+newCorrBrushPanelIdx)
+      .attr("transform", function(){return "translate(" + [(x(dimensions[dimIdx])+50),height+corrBrushPanelMargin+10] + ")"; })
+    ;
+
+    newCorrBrushPanel.ellpanel.append("rect")
+      .attr("y", 0)
+      .attr("width", 70)
+      .attr("height", 70)
+      .attr("fill", "#eeeeee");
+
+
+    newCorrBrushPanel.sigmapanel = newCorrBrushPanel.ellpanel.selectAll(".estcorrbrush_sigma_"+key_+"_"+newCorrBrushPanelIdx)
+      .data([0]).enter().append("g")
+      .attr("class", "estcorrbrush_sigma_"+key_+"_"+newCorrBrushPanelIdx)
+      .attr("transform", function(){return "translate(" + [0,90] + ")"; })
+      //.attr("transform", function(){return "rotate("+270+","+70+","+0+")"; })
+    ;
+
+
+
+
+
+    newCorrBrushPanel.corrbrush = d3.svg.brush().x(estcorr_xscale);
+    newCorrBrushPanel.corrbrush.on("brushstart", estcorr_brushstart).on("brush", estcorr_brushed).on("brushend",estcorr_brushend);
+
+    //corrbrush slider
+    var slider = newCorrBrushPanel.ellpanel.append("g")
+        .attr("class", "estcorrbrush_slider_"+key_+"_"+newCorrBrushPanelIdx)
+        .attr("transform", "translate("+ [0,+70]+")")
+      ;
+    newCorrBrushPanel.corrbrush.extent([-0.1,0.1]);
+    newCorrBrushPanel.corrbrush(slider);
+    //slider.selectAll("rect.background").attr("height", 300);
+    slider.selectAll("rect.extent").attr("height", 10);
+    slider.selectAll("rect.extent").attr("width", 10 );
+    slider.selectAll(".resize rect").attr("height", 0);
+
+
+
+    //sigma slider
+    newCorrBrushPanel.sigmabrush =   d3.svg.brush().x(sigmaSlider_xScale);
+    newCorrBrushPanel.sigmabrush.on("brushstart", sigmaSlider_brushstart).on("brush",sigmaSlider_brushed).on("brushend",sigmaSlider_brushend);
+
+    var sigmaSlider = newCorrBrushPanel.sigmapanel.append("g")
+        .attr("class", "estcorrbrush_sslider_"+key_+"_"+newCorrBrushPanelIdx)
+        .attr("transform", "translate("+ [0,0]+")")
+      ;
+
+
+    newCorrBrushPanel.sigmapanel
+      .append("g")
+      .attr("class", "axis")
+      .style("font-size","7px")
+      .call(sigmaSlider_axis)
+    ;
+
+    newCorrBrushPanel.sigmabrush.extent([1,1.4]);
+    newCorrBrushPanel.sigmabrush(sigmaSlider);
+    newCorrBrushPanel.sigmabrushed = 1.2; //mean of a and 1.4
+    sigmaSlider.selectAll("rect.extent").attr("height", 10);
+    sigmaSlider.selectAll("rect.extent").attr("width", 10 );
+    sigmaSlider.selectAll(".resize rect").attr("height", 0);
+
+
+    newCorrBrushPanel.ellpanel
+      .append("path")
+      .attr("class", "estcorrvertpath")
+      .attr("stroke", "blue")
+      .attr("stroke-width", 0.5)
+      .attr("fill", "none")
+      .attr("d", estcorr_path([{"x":0,"y":-1}, {"x":0,"y":1}]))
+    ;
+
+    newCorrBrushPanel.ellpanel
+      .append("path")
+      .attr("class", "estcorrhorpath")
+      .attr("stroke", "blue")
+      .attr("stroke-width", 0.5)
+      .attr("fill", "none")
+      .attr("d", estcorr_path([{"x":-1,"y":0}, {"x":1,"y":0}]))
+    ;
+
+    newCorrBrushPanel.ellpanel.selectAll(".estcorrbrush_ellipse_"+d+"_"+newCorrBrushPanelIdx)
+      .data([0]).enter()
+      .append("ellipse")
+      .attr("class", "estcorrbrush_ellipse_"+d+"_"+newCorrBrushPanelIdx)
+      .attr("cx", estcorr_xscale(0))
+      .attr("cy", estcorr_yscale(0))
+      .attr("rx", estcorr_rscale(eigens[key_].eigvals[0]))
+      .attr("ry", estcorr_rscale(eigens[key_].eigvals[1]))
+      .attr("fill", "none")
+      .attr("stroke", "#000")
+      .attr("transform", (d, i) => {
+        return "rotate(" + (-1 * 1 * eigens[key_].angle) + "," + estcorr_xscale(0) + "," + estcorr_yscale(0) + ")"
+      });
+  }
+
+
+  function reorientCorrBrushesAfterDragging(){
+    $(".corrbrush_panel").remove();
+    for (var i=0;i<dimensions.length;i++){
+      if (! ( (i+1)<dimensions.length))
+        break;
+      var key_ = dimensions[i]+"___"+dimensions[i+1];
+      if (corrBrushes[key_]==undefined || corrBrushes[key_]==null)
+        corrBrushes[key_]={};
+      corrBrushes[key_]["corrbrush_panels"]=[]
+        //dimension brush already created. no need to create again when reorienting.
+      createCorrBrushPanel(i);
+    }
+  }
+
+  function start(data_){
+    estcorr_remote_data = data_;
+    var data = data_.csv;
+    var eigens = data_.eigens;
+
+
+
+
+
+
+
+
+    // Extract the list of dimensions and create a scale for each.
+    x.domain(dimensions = d3.keys(data[0]).filter(function(d) {
+      return d != "name" && (y[d] = d3.scale.linear()
+          .domain(d3.extent(data, function(p) { return +p[d]; }))
+          .range([height, 0]));
+    }));
+
+    for (var k=0;k<dimensions.length;k++)
+      for (var i=0;i<dimensions.length;i++){
+          if (dimensions[k]===dimensions[i])
+              continue;
+
+          var key_ = dimensions[k]+"___"+dimensions[i];
+          var x_extent = eigens[key_].extents[0];
+          var y_extent = eigens[key_].extents[1];
+          dimscales[key_] = {
+            "xscale":d3.scale.linear().domain(x_extent).range([-1, 1]),
+            "rxscale":d3.scale.linear().domain([-1, 1]).range(x_extent),
+            "yscale":d3.scale.linear().domain(y_extent).range([-1, 1]),
+            "ryscale":d3.scale.linear().domain([-1, 1]).range(y_extent),
+
+        };
+      }
+
+
+
+    // Add grey background lines for context.
+    background = svg.append("g")
+      .attr("class", "background")
+      .selectAll("path")
+      .data(data)
+      .enter().append("path")
+      .attr("d", path);
+
+    // Add blue foreground lines for focus.
+    foreground = svg.append("g")
+      .attr("class", "foreground")
+      .selectAll("path")
+      .data(data)
+      .enter().append("path")
+      .attr("d", path);
+
+    // Add a group element for each dimension.
+    var g = svg.selectAll(".dimension")
+      .data(dimensions)
+      .enter().append("g")
+      .attr("class", (d)=>"dimension dimension_"+d)
+      .attr("transform", function(d) { return "translate(" + x(d) + ")"; })
+      .call(d3.behavior.drag()
+        .origin(function(d) { return {x: x(d)}; })
+        .on("dragstart", function(d) {
+          dragging[d] = x(d);
+          background.attr("visibility", "hidden");
+        })
+        .on("drag", function(d) {
+          dragging[d] = Math.min(width, Math.max(0, d3.event.x));
+          foreground.attr("d", path);
+          dimensions.sort(function(a, b) { return position(a) - position(b); });
+          x.domain(dimensions);
+          g.attr("transform", function(d) { return "translate(" + position(d) + ")"; })
+        })
+        .on("dragend", function(d) {
+          delete dragging[d];
+          transition(d3.select(this)).attr("transform", "translate(" + x(d) + ")");
+          transition(foreground).attr("d", path);
+          background
+            .attr("d", path)
+            .transition()
+            .delay(500)
+            .duration(0)
+            .attr("visibility", null);
+          reorientCorrBrushesAfterDragging();
+        }));
+
+
+    // Add an axis and title.
+    g.append("g")
+      .attr("class", (d)=>"axis axis_"+d)
+      .each(function(d) { d3.select(this).call(axis.scale(y[d])); })
+      .append("text")
+      .style("text-anchor", "middle")
+      .attr("y", -9)
+      .text(function(d) { return d; });
+
+    // Add and store a brush for each axis.
+    g.append("g")
+      .attr("class", function(d) { return "brush dimension_brush_"+d+"_"+dimension_nextBrushIdx(d);})
+      .each(function(d) {
+        //multi-brushes
+        y[d]["brushes"]=[];
+        var brush_ = d3.svg.brush().y(y[d]).on("brushstart", brushstart).on("brush", brush).on("brushend",brushend);
+        y[d].brushes.push( brush_);
+        d3.select(this).call(y[d].brushes[0]);
+      })
+      .selectAll("rect")
+      .attr("x", -8)
+      .attr("width", 16);
+
+
+    // Add estcorrbrush
+    for (var i=0;i<dimensions.length;i++){
+
+      createNewDimensionBrush(createDimIdxStruct("dimension_brush_"+dimensions[i]+"_1"));
+      if (! ( (i+1)<dimensions.length))
+        break;
+      //var key_ = dimensions[dimensionIdx-1] + "___" + dimensions[dimensionIdx];
+      createCorrBrushPanel(i);
+    }
+    createDimensionButtons(g);
+
+
+
+  }
+
+
+  $().ready(function(){
+
+    $.getJSON( "http://localhost:5000/proghist/parallelcoord/iriscorr/fetchData", function( data_ ) {
+      start(data_);
+    });
+
+    $.getJSON( "http://localhost:5000/parcoord/iriskmeans/oftwovars?var1=petal_len&var2=petal_w&K=3", function( data_ ) {
+      new VarClusterBrush(clusterBrushContainer).start(data_);
+    });
+
+    $("#sepal_w_brush_btn").click(function(){
+        //applyCorrbrush("petal_len", 3.2);
+    });
+
+  });
+
+</script>
